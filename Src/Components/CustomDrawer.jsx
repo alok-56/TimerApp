@@ -30,14 +30,13 @@ const CustomDrawer = props => {
 
   const GetLocaldata = async () => {
     let email = await AsyncStorage.getItem('email');
-    console.log(email)
-    setEmail(JSON.parse(email));
+    setEmail(email);
   };
 
-  const HandleLogout=async ()=>{
-    await AsyncStorage.clear()
-    navigation.navigate("splash")
-  }
+  const HandleLogout = async () => {
+    await AsyncStorage.clear();
+    navigation.navigate('splash');
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -95,7 +94,7 @@ const CustomDrawer = props => {
         <TouchableOpacity
           style={styles.button}
           onPress={() => {
-            HandleLogout()
+            HandleLogout();
           }}>
           <View style={styles.menuItem}>
             <AntDesign

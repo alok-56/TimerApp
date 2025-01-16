@@ -95,6 +95,7 @@ const Login = ({navigation}) => {
       let token = await TokenCreation();
       await AsyncStorage.setItem('token', token.access_token);
       if (token?.access_token) {
+        await AsyncStorage.setItem('email',email)
         LoginApi(email).then(async res => {
           console.log(res)
           if (res.done && res?.totalSize > 0) {
@@ -102,7 +103,7 @@ const Login = ({navigation}) => {
             if (isSupported) {
               let {success, method} = await authenticateUser();
               if (success) {
-                await AsyncStorage.setItem('email',email)
+                
                 await AsyncStorage.setItem('pin', pin);
                 await AsyncStorage.setItem('islogned', 'true');
                 await AsyncStorage.setItem('id', res.records[0].Id);

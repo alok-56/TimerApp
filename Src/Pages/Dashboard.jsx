@@ -11,14 +11,18 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Geolocation from 'react-native-geolocation-service';
 import DeviceInfo from 'react-native-device-info';
-import {request, PERMISSIONS, RESULTS} from 'react-native-permissions';
-import {AttendanceCreation, AttendanceUpdate} from '../Api/Service';
+import {request, PERMISSIONS, RESULTS, check} from 'react-native-permissions';
+import {
+  AttendanceCreation,
+  AttendanceUpdate,
+  ShiftDetails,
+} from '../Api/Service';
 import {IpUrl} from '../Api/Constants';
 import LinearGradient from 'react-native-linear-gradient';
 import {showMessage} from 'react-native-flash-message';
 import BottomModal from '../Components/BottomModal';
 import CustomDrawer from '../Components/CustomDrawer';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 
 const Dashboard = ({navigation}) => {
   const [startTime, setStartTime] = useState(null);
@@ -29,7 +33,7 @@ const Dashboard = ({navigation}) => {
   const [isVisible, setIsvisible] = useState(false);
   const [isloading, setIsloading] = useState(false);
 
-  const { openDrawer, closeDrawer, toggleDrawer } = useNavigation();
+  const {openDrawer, closeDrawer, toggleDrawer} = useNavigation();
 
   useEffect(() => {
     const loadStartTime = async () => {
@@ -66,19 +70,22 @@ const Dashboard = ({navigation}) => {
     getDeviceInfo();
     await requestLocationPermission();
     getLocation();
-   
+
     let id = await AsyncStorage.getItem('id');
+    let shiftId = await ShiftDetails(id);
+
+    setIsloading(false);
     const attendanceData = {
+      Shift__c: shiftId.records[0].Id,
       Contact__c: id,
-      Shift_Date__c: formattedDate,
-      // Login_Location__Latitude__s: location?.latitude,
-      // Login_Location__Longitude__s: location?.longitude,
-      Shift_Start_Time__c: formattedTimeIn,
+      Logged_Date__c: formattedDate,
+      Login_Location__Latitude__s: location?.latitude,
+      Login_Location__Longitude__s: location?.longitude,
+      Time_In__c: formattedTimeIn,
     };
 
     try {
       const result = await AttendanceCreation(attendanceData);
-      console.log(result);
       if (result.success) {
         setStartTime(newStartTime);
         setElapsedTime(0);
@@ -121,9 +128,11 @@ const Dashboard = ({navigation}) => {
     getLocation();
     let id = await AsyncStorage.getItem('id');
     let check = await AsyncStorage.getItem('checkid');
+    let shiftId = await ShiftDetails(id);
     const attendanceData = {
+      Shift__c: shiftId,
       Contact__c: id,
-      Shift_End_Time__c: formattedTimeout,
+      Time_out__c: formattedTimeout,
     };
     try {
       const result = await AttendanceUpdate(attendanceData, check);
@@ -195,11 +204,6 @@ const Dashboard = ({navigation}) => {
       },
       {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
     );
-  };
-
-  const Handlelogout = async () => {
-    navigation.navigate('login');
-    await AsyncStorage.clear();
   };
 
   const requestLocationPermission = async () => {

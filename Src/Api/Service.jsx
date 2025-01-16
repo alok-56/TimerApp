@@ -21,7 +21,6 @@ export const TokenCreation = async () => {
 
 export const LoginApi = async email => {
   let token = await GetAsyncData('token');
-  console.log(token);
   try {
     let response = await fetch(
       `${BaseUrl}/query/?q=SELECT+Id+FROM+Contact+WHERE+Email='${email}'`,
@@ -40,10 +39,30 @@ export const LoginApi = async email => {
   }
 };
 
+export const ShiftDetails = async id => {
+  let token = await GetAsyncData('token');
+  try {
+    let response = await fetch(
+      `${BaseUrl}/query/?q=SELECT+Id,+Name,+Shift_Start_Time__c,+Shift_End_Time__c,+Shift_Date__c FROM Shift__c where Contact__c='${id}'+ AND+Shift_Date__c>=2025-01-15`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+    response = await response.json();
+    return response;
+  } catch (error) {
+    return error.message;
+  }
+};
+
 export const AttendanceCreation = async data => {
   let token = await GetAsyncData('token');
   try {
-    let response = await fetch(`${BaseUrl}/sobjects/Shift__c`, {
+    let response = await fetch(`${BaseUrl}/sobjects/Attendence__c`, {
       method: 'POST',
       body: JSON.stringify(data),
       headers: {
@@ -58,10 +77,10 @@ export const AttendanceCreation = async data => {
   }
 };
 
-export const AttendanceUpdate = async (data, id) => {
+export const AttendanceUpdate = async (data, check) => {
   let token = await GetAsyncData('token');
   try {
-    let response = await fetch(`${BaseUrl}/sobjects/Shift__c/${id}`, {
+    let response = await fetch(`${BaseUrl}/sobjects/Attendence__c/${check}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
       headers: {
@@ -69,6 +88,26 @@ export const AttendanceUpdate = async (data, id) => {
         Authorization: `Bearer ${token}`,
       },
     });
+    response = await response.json();
+    return response;
+  } catch (error) {
+    return error.message;
+  }
+};
+
+export const GetDailyShiftdetails = async (userid, date) => {
+  let token = await GetAsyncData('token');
+  try {
+    let response = await fetch(
+      `${BaseUrl}/query/?q=SELECT+Id,+Name,+Actual_Hours__c,+Extra_Hours__c,+Logged_Date__c,+Login_Location__c,+Logout_Location__c,+Time_In__c,+Time_out__c,+Total_Work_Hours__c+FROM+Attendence__c+WHERE+Logged_Date__c=${date}+AND+Contact__c='${userid}'`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
     response = await response.json();
     return response;
   } catch (error) {

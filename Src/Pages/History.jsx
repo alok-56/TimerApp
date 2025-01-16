@@ -1,5 +1,5 @@
 import {useNavigation} from '@react-navigation/native';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -10,22 +10,71 @@ import {
 } from 'react-native';
 import {Calendar} from 'react-native-calendars';
 import Home from 'react-native-vector-icons/FontAwesome';
+import {GetDailyShiftdetails} from '../Api/Service';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const History = () => {
   const {openDrawer, closeDrawer, toggleDrawer} = useNavigation();
-
+  const [data, setData] = useState([]);
   const [calendarVisible, setCalendarVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
 
- 
+  useEffect(() => {
+    UserHistory();
+    ExtractDayAndDate();
+  }, [selectedDate]);
+
+  const UserHistory = async () => {
+    let id = await AsyncStorage.getItem('id');
+    GetDailyShiftdetails(id, selectedDate).then(res => {
+      console.log(res.records[0]);
+      if (res.records.length > 0) {
+        setData(res.records);
+      } else {
+        setData([]);
+      }
+    });
+  };
+
   const handleDateChange = date => {
     setSelectedDate(date.dateString);
     setCalendarVisible(false);
   };
 
+  const ExtractDayAndDate = date => {
+    let newDate = new Date(date);
+    const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    let dayOfWeek = daysOfWeek[newDate.getDay()];
+    let dayOfMonth = newDate.getDate();
+    return {
+      day: dayOfWeek,
+      date: dayOfMonth,
+    };
+  };
+
+  const ExtractAmOrPm = time => {
+    const date = new Date(`1970-01-01T${time}`); // Use any date; only time matters
+
+    // Get hours and minutes
+    let hours = date.getUTCHours(); // Use UTC since timestamp is in UTC
+    const minutes = date.getUTCMinutes();
+
+    // Determine AM or PM
+    const period = hours >= 12 ? 'PM' : 'AM';
+
+    // Convert to 12-hour format
+    hours = hours % 12 || 12; // Converts 0 to 12 for 12 AM/PM
+
+    // Format the time string
+    const formattedTime = `${hours}:${minutes
+      .toString()
+      .padStart(2, '0')} ${period}`;
+
+    return formattedTime;
+  };
+
   return (
     <View style={{flex: 1}}>
-     
       <Modal
         transparent={true}
         animationType="slide"
@@ -105,7 +154,6 @@ const History = () => {
         </View>
       </View>
 
-     
       <View style={{padding: 10}}>
         <Text style={{fontSize: 18, fontWeight: '600'}}>
           {selectedDate ? `Selected Date: ${selectedDate}` : 'No Date Selected'}
@@ -113,7 +161,7 @@ const History = () => {
       </View>
 
       <FlatList
-        data={[1, 2, 3, 4]}
+        data={data}
         renderItem={({index, item}) => {
           return (
             <View
@@ -150,21 +198,29 @@ const History = () => {
                       color: '#000',
                       textAlign: 'center',
                     }}>
-                    08
+                    {ExtractDayAndDate(item?.Logged_Date__c)?.date}
                   </Text>
-                  <Text style={{textAlign: 'center'}}>Mon</Text>
+                  <Text style={{textAlign: 'center'}}>
+                    {ExtractDayAndDate(item?.Logged_Date__c)?.day}
+                  </Text>
                 </View>
                 <View style={{justifyContent: 'center'}}>
                   <Text style={{fontSize: 16, fontWeight: '800'}}>
                     Check In
                   </Text>
-                  <Text style={{fontSize: 16, fontWeight: '400'}}>9:35 AM</Text>
+                  <Text style={{fontSize: 16, fontWeight: '400'}}>
+                    {item?.Time_In__c ? ExtractAmOrPm(item?.Time_In__c) : 'NA'}
+                  </Text>
                 </View>
                 <View style={{justifyContent: 'center'}}>
                   <Text style={{fontSize: 16, fontWeight: '800'}}>
                     Check Out
                   </Text>
-                  <Text style={{fontSize: 16, fontWeight: '400'}}>9:35 AM</Text>
+                  <Text style={{fontSize: 16, fontWeight: '400'}}>
+                    {item?.Time_out__c
+                      ? ExtractAmOrPm(item?.Time_out__c)
+                      : 'NA'}
+                  </Text>
                 </View>
               </View>
             </View>
