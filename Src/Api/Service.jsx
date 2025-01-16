@@ -77,10 +77,10 @@ export const AttendanceCreation = async data => {
   }
 };
 
-export const AttendanceUpdate = async (data, check) => {
+export const AttendanceUpdate = async (data, userid) => {
   let token = await GetAsyncData('token');
   try {
-    let response = await fetch(`${BaseUrl}/sobjects/Attendence__c/${check}`, {
+    let response = await fetch(`${BaseUrl}/sobjects/Attendence__c/${userid}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
       headers: {

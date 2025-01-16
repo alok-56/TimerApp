@@ -130,7 +130,7 @@ const Dashboard = ({navigation}) => {
     let check = await AsyncStorage.getItem('checkid');
     let shiftId = await ShiftDetails(id);
     const attendanceData = {
-      Shift__c: shiftId,
+      Shift__c: shiftId.records[0].Id,
       Contact__c: id,
       Time_out__c: formattedTimeout,
     };
@@ -188,6 +188,8 @@ const Dashboard = ({navigation}) => {
         ipAddress: data.ip,
       });
     } catch (error) {
+      setIsvisible(false);
+      setIsloading(false);
       console.error('Error getting device info:', error);
     }
   };
@@ -199,6 +201,8 @@ const Dashboard = ({navigation}) => {
         setLocation({latitude, longitude});
       },
       error => {
+        setIsvisible(false);
+        setIsloading(false);
         console.error('Error getting location:', error);
         setLocation(null);
       },
@@ -224,6 +228,8 @@ const Dashboard = ({navigation}) => {
         console.log('Location permission blocked');
       }
     } catch (error) {
+      setIsvisible(false);
+      setIsloading(false);
       console.error('Error requesting location permission:', error);
     }
   };
