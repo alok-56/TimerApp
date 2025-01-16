@@ -18,16 +18,21 @@ const History = () => {
   const [data, setData] = useState([]);
   const [calendarVisible, setCalendarVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    const today = new Date();
+    const formattedDate = today.toISOString().split('T')[0];
+    setSelectedDate(formattedDate);
+  }, []);
 
   useEffect(() => {
     UserHistory();
-    ExtractDayAndDate();
   }, [selectedDate]);
 
   const UserHistory = async () => {
     let id = await AsyncStorage.getItem('id');
     GetDailyShiftdetails(id, selectedDate).then(res => {
-      console.log(res.records[0]);
       if (res.records.length > 0) {
         setData(res.records);
       } else {
@@ -53,24 +58,26 @@ const History = () => {
   };
 
   const ExtractAmOrPm = time => {
-    const date = new Date(`1970-01-01T${time}`); // Use any date; only time matters
+    const date = new Date(`1970-01-01T${time}`);
 
-    // Get hours and minutes
-    let hours = date.getUTCHours(); // Use UTC since timestamp is in UTC
+    let hours = date.getUTCHours();
     const minutes = date.getUTCMinutes();
 
-    // Determine AM or PM
     const period = hours >= 12 ? 'PM' : 'AM';
 
-    // Convert to 12-hour format
-    hours = hours % 12 || 12; // Converts 0 to 12 for 12 AM/PM
+    hours = hours % 12 || 12;
 
-    // Format the time string
     const formattedTime = `${hours}:${minutes
       .toString()
       .padStart(2, '0')} ${period}`;
 
     return formattedTime;
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await UserHistory();
+    setRefreshing(false);
   };
 
   return (
@@ -162,6 +169,8 @@ const History = () => {
 
       <FlatList
         data={data}
+        refreshing={refreshing} // Bind refreshing state to FlatList
+        onRefresh={handleRefresh} // Attach onRefresh handler
         renderItem={({index, item}) => {
           return (
             <View

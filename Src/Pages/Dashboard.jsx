@@ -108,7 +108,7 @@ const Dashboard = ({navigation}) => {
         setIsloading(false);
       }
     } catch (error) {
-      console.error('Error creating attendance:', error);
+      
       setIsvisible(false);
       setIsloading(false);
     }
