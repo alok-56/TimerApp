@@ -43,7 +43,7 @@ export const LoginApi = async email => {
 export const AttendanceCreation = async data => {
   let token = await GetAsyncData('token');
   try {
-    let response = await fetch(`${BaseUrl}/sobjects/Attendence__c`, {
+    let response = await fetch(`${BaseUrl}/sobjects/Shift__c`, {
       method: 'POST',
       body: JSON.stringify(data),
       headers: {
@@ -61,7 +61,7 @@ export const AttendanceCreation = async data => {
 export const AttendanceUpdate = async (data, id) => {
   let token = await GetAsyncData('token');
   try {
-    let response = await fetch(`${BaseUrl}/sobjects/Attendence__c/${id}`, {
+    let response = await fetch(`${BaseUrl}/sobjects/Shift__c/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
       headers: {

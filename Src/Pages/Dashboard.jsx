@@ -18,6 +18,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import {showMessage} from 'react-native-flash-message';
 import BottomModal from '../Components/BottomModal';
 import CustomDrawer from '../Components/CustomDrawer';
+import { useNavigation } from '@react-navigation/native';
 
 const Dashboard = ({navigation}) => {
   const [startTime, setStartTime] = useState(null);
@@ -27,17 +28,9 @@ const Dashboard = ({navigation}) => {
   const [location, setLocation] = useState(null);
   const [isVisible, setIsvisible] = useState(false);
   const [isloading, setIsloading] = useState(false);
-  const [isDrawerVisible, setIsDrawerVisible] = useState(false);
 
-  const opendrawer = () => {
-    console.log("open")
-    setIsDrawerVisible(true);
-  };
+  const { openDrawer, closeDrawer, toggleDrawer } = useNavigation();
 
-  const closedrawer = () => {
-    console.log("close")
-    setIsDrawerVisible(false);
-  };
   useEffect(() => {
     const loadStartTime = async () => {
       const storedStartTime = await AsyncStorage.getItem('startTime');
@@ -59,7 +52,6 @@ const Dashboard = ({navigation}) => {
   }, [timerActive, startTime]);
 
   const handleCheckIn = async () => {
-   
     setIsvisible(false);
     setIsloading(true);
     const newStartTime = Date.now();
@@ -74,14 +66,14 @@ const Dashboard = ({navigation}) => {
     getDeviceInfo();
     await requestLocationPermission();
     getLocation();
-
+   
     let id = await AsyncStorage.getItem('id');
     const attendanceData = {
       Contact__c: id,
-      Logged_Date__c: formattedDate,
-      Login_Location__Latitude__s: location?.latitude,
-      Login_Location__Longitude__s: location?.longitude,
-      Time_In__c: formattedTimeIn,
+      Shift_Date__c: formattedDate,
+      // Login_Location__Latitude__s: location?.latitude,
+      // Login_Location__Longitude__s: location?.longitude,
+      Shift_Start_Time__c: formattedTimeIn,
     };
 
     try {
@@ -116,7 +108,6 @@ const Dashboard = ({navigation}) => {
   };
 
   const handleCheckOut = async () => {
-    
     setIsvisible(false);
     setIsloading(true);
     const currentDate = new Date();
@@ -132,7 +123,7 @@ const Dashboard = ({navigation}) => {
     let check = await AsyncStorage.getItem('checkid');
     const attendanceData = {
       Contact__c: id,
-      Time_out__c: formattedTimeout,
+      Shift_End_Time__c: formattedTimeout,
     };
     try {
       const result = await AttendanceUpdate(attendanceData, check);
@@ -238,7 +229,7 @@ const Dashboard = ({navigation}) => {
       colors={['#4c669f', '#3b5998', '#192f5d']}
       style={{flex: 1}}>
       <View style={styles.container}>
-        <TouchableOpacity onPress={opendrawer} style={styles.menuButton}>
+        <TouchableOpacity onPress={openDrawer} style={styles.menuButton}>
           <View
             style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
             <Text style={styles.menuText}>☰</Text>
@@ -362,12 +353,6 @@ const Dashboard = ({navigation}) => {
         isVisible={isVisible}
         onConfirm={timerActive ? handleCheckOut : handleCheckIn}
         onClose={() => setIsvisible(false)}></BottomModal>
-
-      <CustomDrawer
-        isDrawerVisible={isDrawerVisible}
-        onClose={closedrawer}
-        Handlelogout={Handlelogout}
-      />
     </LinearGradient>
   );
 };

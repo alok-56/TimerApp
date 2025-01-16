@@ -1,172 +1,214 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useFocusEffect} from '@react-navigation/native';
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
-  View,
+  SafeAreaView,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
-  Animated,
-  Easing,
+  View,
+  Dimensions,
   Image,
+  PixelRatio,
 } from 'react-native';
-import {LinearGradient} from 'react-native-linear-gradient';
+import AntDesign from 'react-native-vector-icons/AntDesign';
+import Home from 'react-native-vector-icons/FontAwesome';
 
-const CustomDrawer = ({isDrawerVisible, onClose, Handlelogout}) => {
-  const drawerWidth = 250;
-  const drawerAnim = new Animated.Value(-drawerWidth);
+const {width} = Dimensions.get('window');
+const scale = width / 375;
+
+const normalize = size =>
+  Math.round(PixelRatio.roundToNearestPixel(size * scale));
+
+const CustomDrawer = props => {
+  const {state, navigation} = props;
+  const activeRoute = state.routeNames[state.index];
+  const [email, setEmail] = useState('');
 
   useEffect(() => {
-    if (isDrawerVisible) {
-      console.log('Drawer Animation Value:', drawerAnim);
-      Animated.timing(drawerAnim, {
-        toValue: 0,
-        duration: 300,
-        easing: Easing.ease,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(drawerAnim, {
-        toValue: -drawerWidth,
-        duration: 300,
-        easing: Easing.ease,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [isDrawerVisible]);
+    GetLocaldata();
+  }, []);
+
+  const GetLocaldata = async () => {
+    let email = await AsyncStorage.getItem('email');
+    console.log(email)
+    setEmail(JSON.parse(email));
+  };
+
+  const HandleLogout=async ()=>{
+    await AsyncStorage.clear()
+    navigation.navigate("splash")
+  }
 
   return (
-    <Animated.View
-      style={[styles.drawerContainer, {transform: [{translateX: drawerAnim}]}]}>
-      <LinearGradient colors={['#fff', '#fff']} style={styles.drawerBackground}>
-        <TouchableOpacity style={styles.overlay} />
+    <SafeAreaView style={styles.container}>
+      <View style={styles.headerContainer}>
+        <View style={styles.profilePictureContainer}>
+          <Image
+            source={require('../Assests/Images/profilecir.png')}
+            style={styles.profileImage}
+          />
+        </View>
+        <Text style={styles.userName}>{email || 'Admin'}</Text>
+      </View>
 
-        <View style={styles.drawerContent}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <View
-              style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-              <Text style={styles.closeButtonText}>X</Text>
+      <View style={styles.mainOptionsContainer}>
+        {[
+          {name: 'Home', route: 'dashboard', icon: 'home'},
+          {name: 'History', route: 'history', icon: 'history'},
+        ].map(item => (
+          <TouchableOpacity
+            key={item.route}
+            style={[
+              styles.button,
+              activeRoute === item.route && styles.activeButton,
+            ]}
+            onPress={() => navigation.navigate(item.route)}>
+            <View style={styles.menuItem}>
+              {item.name === 'Home' ? (
+                <Home
+                  name={item.icon}
+                  size={normalize(20)}
+                  color={activeRoute === item.route ? '#552F62' : 'black'}
+                />
+              ) : item.name === 'History' ? (
+                <Home
+                  name={item.icon}
+                  size={normalize(20)}
+                  color={activeRoute === item.route ? '#552F62' : 'black'}
+                />
+              ) : (
+                ''
+              )}
+              <Text
+                style={[
+                  styles.buttonText,
+                  activeRoute === item.route && styles.activeButtonText,
+                ]}>
+                {item.name}
+              </Text>
             </View>
           </TouchableOpacity>
+        ))}
+      </View>
 
-          <View
-            style={{
-              height: 100,
-              width: 100,
-              backgroundColor: '#fff',
-              borderRadius: 50,
-              alignSelf: 'center',
-              marginTop: 30,
-            }}>
-            <Image
-              style={{
-                height: 100,
-                width: 100,
-                backgroundColor: '#fff',
-                borderRadius: 50,
-                alignSelf: 'center',
-              }}
-              source={require('../Assests/Images/profilecir.png')}></Image>
-          </View>
-          <Text
-            style={{
-              textAlign: 'center',
-              fontSize: 18,
-              fontWeight: '700',
-              marginTop: 5,
-            }}>
-            Admin
-          </Text>
-        </View>
+      <View style={styles.logoutContainer}>
         <TouchableOpacity
-          style={{
-            position: 'absolute',
-            bottom: '10%',
-            flexDirection: 'row',
-            alignSelf: 'center',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: '#4c669f',
-            padding: 10,
-            borderRadius: 8,
-          }}
-          onPress={Handlelogout}>
-          <Image
-            style={{height: 30, width: 30, tintColor: '#fff'}}
-            source={require('../Assests/Icons/logout.png')}></Image>
-          <View>
-            <Text
-              style={{
-                fontSize: 18,
-                fontWeight: '600',
-                marginLeft: 5,
-                color: '#fff',
-              }}>
-              Logout
-            </Text>
+          style={styles.button}
+          onPress={() => {
+            HandleLogout()
+          }}>
+          <View style={styles.menuItem}>
+            <AntDesign
+              style={styles.icon}
+              color={'#000'}
+              name={'logout'}
+              size={normalize(15)}
+            />
+            <Text style={styles.buttonText}>Logout</Text>
           </View>
         </TouchableOpacity>
-      </LinearGradient>
-    </Animated.View>
+      </View>
+
+      <TouchableOpacity
+        style={styles.closeDrawer}
+        onPress={() => navigation.closeDrawer()}>
+        <AntDesign
+          style={styles.icon}
+          color={'#552F62'}
+          name={'closecircle'}
+          size={normalize(20)}
+        />
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 };
 
+export default CustomDrawer;
+
 const styles = StyleSheet.create({
-  drawerContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    bottom: 0,
-    width: 250,
-    zIndex: 1,
-    elevation: 20,
-  },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 0,
-  },
-  drawerBackground: {
+  container: {
+    backgroundColor: '#fff',
     flex: 1,
-    borderRadius: 5,
-    width: '100%',
   },
-  drawerContent: {
-    height: 170,
+  headerContainer: {
     width: '100%',
-    backgroundColor: '#efeded',
+    backgroundColor: '#F3F1F4',
+    paddingBottom: normalize(10),
+    alignItems: 'center',
   },
-  closeButton: {
+  logoContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: normalize(10),
+  },
+  appTxt: {
+    fontSize: normalize(16),
+    color: '#7E69AE',
+    fontWeight: 'bold',
+  },
+  retailTxt: {
+    fontSize: normalize(16),
+    color: '#552F62',
+    fontWeight: 'bold',
+  },
+  mainOptionsContainer: {
+    marginTop: normalize(15),
+    paddingHorizontal: normalize(20),
+  },
+  button: {
+    marginTop: normalize(10),
+    borderRadius: 8,
+  },
+  activeButton: {
+    backgroundColor: 'rgba(107, 187, 240, 0.5)',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingVertical: normalize(12),
+    paddingHorizontal: normalize(15),
+  },
+  buttonText: {
+    fontSize: normalize(14),
+    color: 'black',
+    fontWeight: '600',
+    marginLeft: normalize(10),
+  },
+  activeButtonText: {
+    color: '#552F62',
+  },
+  logoutContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    marginBottom: normalize(20),
+    paddingHorizontal: normalize(20),
+  },
+  closeDrawer: {
     position: 'absolute',
-    top: 10,
-    right: 10,
-    height: 30,
-    width: 30,
-    backgroundColor: '#000',
-    borderRadius: 15,
-    zIndex: 2,
+    top: normalize(10),
+    right: normalize(10),
   },
-  closeButtonText: {
-    fontSize: 18,
-    color: '#fff',
-    fontWeight: 'bold',
-    textAlign: 'center',
+  profilePictureContainer: {
+    width: normalize(64),
+    height: normalize(64),
+    borderRadius: normalize(32),
+    borderWidth: 2,
+    borderColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
   },
-  drawerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 40,
+  profileImage: {
+    width: normalize(60),
+    height: normalize(60),
+    borderRadius: normalize(30),
   },
-  drawerItem: {
-    marginBottom: 20,
-  },
-  drawerItemText: {
-    fontSize: 18,
-    color: '#fff',
+  userName: {
+    fontSize: normalize(14),
+    fontWeight: '700',
+    color: '#000',
+    marginVertical: normalize(8),
   },
 });
-
-export default CustomDrawer;

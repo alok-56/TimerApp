@@ -102,6 +102,7 @@ const Login = ({navigation}) => {
             if (isSupported) {
               let {success, method} = await authenticateUser();
               if (success) {
+                await AsyncStorage.setItem('email',email)
                 await AsyncStorage.setItem('pin', pin);
                 await AsyncStorage.setItem('islogned', 'true');
                 await AsyncStorage.setItem('id', res.records[0].Id);
