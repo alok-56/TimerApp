@@ -72,6 +72,7 @@ export const AttendanceCreation = async data => {
     });
     response = await response.json();
     return response;
+   
   } catch (error) {
     return error.message;
   }
@@ -88,10 +89,25 @@ export const AttendanceUpdate = async (data, userid) => {
         Authorization: `Bearer ${token}`,
       },
     });
-    response = await response.json();
-    return response;
+
+    if (response.status === 204) {
+      console.log('No content response: Success');
+      return { success: true };
+    }
+
+    if (response.ok) {
+      const responseText = await response.text();
+      const jsonResponse = responseText ? JSON.parse(responseText) : null;
+      console.log(jsonResponse);
+      return jsonResponse;
+    }
+    const errorMessage = `Error: ${response.status} ${response.statusText}`;
+    console.error(errorMessage);
+    throw new Error(errorMessage);
+
   } catch (error) {
-    return error.message;
+    console.error('Error during fetch or JSON parsing:', error);
+    return { status: false, error: error.message };
   }
 };
 
