@@ -67,25 +67,33 @@ const Dashboard = ({navigation}) => {
       .split('T')[1]
       .split('.')[0];
 
-    getDeviceInfo();
-    await requestLocationPermission();
-    getLocation();
-
-    let id = await AsyncStorage.getItem('id');
-    let shiftId = await ShiftDetails(id);
-
-    setIsloading(false);
-    const attendanceData = {
-      Shift__c: shiftId.records[0].Id,
-      Contact__c: id,
-      Logged_Date__c: formattedDate,
-      Login_Location__Latitude__s: location?.latitude,
-      Login_Location__Longitude__s: location?.longitude,
-      Time_In__c: formattedTimeIn,
-    };
-
     try {
+      await requestLocationPermission();
+      await getLocation();
+      if (!location) {
+        showMessage({
+          message: 'Error',
+          description: 'Unable to fetch location. Try again',
+          type: 'danger',
+        });
+        setIsloading(false);
+        return;
+      }
+
+      let id = await AsyncStorage.getItem('id');
+      let shiftId = await ShiftDetails(id);
+
+      const attendanceData = {
+        Shift__c: shiftId.records[0].Id,
+        Contact__c: id,
+        Logged_Date__c: formattedDate,
+        Login_Location__Latitude__s: location?.latitude,
+        Login_Location__Longitude__s: location?.longitude,
+        Time_In__c: formattedTimeIn,
+      };
+
       const result = await AttendanceCreation(attendanceData);
+
       if (result.success) {
         setStartTime(newStartTime);
         setElapsedTime(0);
@@ -97,19 +105,21 @@ const Dashboard = ({navigation}) => {
           description: 'Attendance created successfully',
           type: 'success',
         });
-        setIsloading(false);
       } else {
         showMessage({
           message: 'Error',
           description: result[0]?.message,
           type: 'danger',
         });
-        setIsvisible(false);
-        setIsloading(false);
       }
     } catch (error) {
-      
-      setIsvisible(false);
+      console.error('Error during check-in:', error);
+      showMessage({
+        message: 'Error',
+        description: 'An unexpected error occurred.',
+        type: 'danger',
+      });
+    } finally {
       setIsloading(false);
     }
   };
@@ -125,7 +135,7 @@ const Dashboard = ({navigation}) => {
 
     getDeviceInfo();
     await requestLocationPermission();
-    getLocation();
+    await getLocation();
     let id = await AsyncStorage.getItem('id');
     let check = await AsyncStorage.getItem('checkid');
     let shiftId = await ShiftDetails(id);
@@ -136,7 +146,6 @@ const Dashboard = ({navigation}) => {
     };
     try {
       const result = await AttendanceUpdate(attendanceData, check);
-      console.log(result);
       if (result.success) {
         setTimerActive(true);
         setStartTime(null);
@@ -194,20 +203,26 @@ const Dashboard = ({navigation}) => {
     }
   };
 
-  const getLocation = () => {
-    Geolocation.getCurrentPosition(
-      position => {
-        const {latitude, longitude} = position.coords;
-        setLocation({latitude, longitude});
-      },
-      error => {
-        setIsvisible(false);
-        setIsloading(false);
-        console.error('Error getting location:', error);
-        setLocation(null);
-      },
-      {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
-    );
+  const getLocation = async () => {
+    return new Promise((resolve, reject) => {
+      Geolocation.getCurrentPosition(
+        position => {
+          const {latitude, longitude} = position.coords;
+          if (latitude && longitude) {
+            setLocation({latitude, longitude});
+            resolve({latitude, longitude});
+          } else {
+            reject('Location not available');
+          }
+        },
+        error => {
+          console.error('Error getting location:', error);
+          setLocation(null);
+          reject('Failed to get location');
+        },
+        {enableHighAccuracy: true, timeout: 20000, maximumAge: 10000},
+      );
+    });
   };
 
   const requestLocationPermission = async () => {
@@ -220,17 +235,22 @@ const Dashboard = ({navigation}) => {
           PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
         );
       }
+
       if (permissionStatus === RESULTS.GRANTED) {
         console.log('Location permission granted');
-      } else if (permissionStatus === RESULTS.DENIED) {
-        console.log('Location permission denied');
-      } else if (permissionStatus === RESULTS.BLOCKED) {
-        console.log('Location permission blocked');
+      } else {
+        showMessage({
+          message: 'Permission Denied',
+          description: 'Location permission is required to proceed.',
+          type: 'danger',
+        });
+        setIsvisible(false);
+        setIsloading(false);
       }
     } catch (error) {
+      console.error('Error requesting location permission:', error);
       setIsvisible(false);
       setIsloading(false);
-      console.error('Error requesting location permission:', error);
     }
   };
 

@@ -31,7 +31,7 @@ const Login = ({navigation}) => {
       setIslogin(true);
       if (isSupported) {
         let {success, method} = await authenticateUser();
-        if (method === 'cancel') {
+        if (!success) {
           setPinOption(true);
         }
         if (success) {
@@ -43,9 +43,9 @@ const Login = ({navigation}) => {
     } else {
       setIslogin(false);
       if (isSupported) {
-        let {success, method} = await authenticateUser();
-        if (success) {
-        }
+        // let {success, method} = await authenticateUser();
+        // if (success) {
+        // }
       } else {
         setPinOption(null);
       }
@@ -95,15 +95,17 @@ const Login = ({navigation}) => {
       let token = await TokenCreation();
       await AsyncStorage.setItem('token', token.access_token);
       if (token?.access_token) {
-        await AsyncStorage.setItem('email',email)
+        await AsyncStorage.setItem('email', email);
         LoginApi(email).then(async res => {
-          console.log(res)
           if (res.done && res?.totalSize > 0) {
             const isSupported = await isBiometricSupported();
-            if (isSupported) {
+            if (isSupported && !pinoption) {
               let {success, method} = await authenticateUser();
+              if (!success) {
+                setIsloading(false);
+                setPinOption(true);
+              }
               if (success) {
-                
                 await AsyncStorage.setItem('pin', pin);
                 await AsyncStorage.setItem('islogned', 'true');
                 await AsyncStorage.setItem('id', res.records[0].Id);
@@ -116,6 +118,7 @@ const Login = ({navigation}) => {
                 setIsloading(false);
               }
             } else {
+              setIsloading(false);
               setPinOption(true);
               if (pin) {
                 await AsyncStorage.setItem('pin', pin);
