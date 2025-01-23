@@ -2,18 +2,18 @@ import React from 'react';
 import {Text, TouchableOpacity, View} from 'react-native';
 import {OtpInput} from 'react-native-otp-entry';
 
-const OtpSetup = ({OnOtpSet}) => {
+const OtpSetup = ({OnOtpSet,visible}) => {
   return (
     <View style={{width: '95%', marginTop: 10}}>
       <OtpInput
         numberOfDigits={4}
         focusColor="green"
         autoFocus={false}
-        hideStick={true}
+        hideStick={false}
         blurOnFilled={true}
         disabled={false}
         type="numeric"
-        secureTextEntry={false}
+        secureTextEntry={visible}
         focusStickBlinkingDuration={500}
         onFocus={() => console.log('Focused')}
         onBlur={() => console.log('Blurred')}

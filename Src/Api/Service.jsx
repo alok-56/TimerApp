@@ -1,17 +1,14 @@
 import {GetAsyncData} from '../Helper/AsyncStorage';
-import {BaseUrl} from './Constants';
+import {BaseUrl, TokenUrl} from './Constants';
 
 export const TokenCreation = async () => {
   try {
-    let response = await fetch(
-      `https://test.salesforce.com/services/oauth2/token?username=steven@bnkservices.com.au.mobileapp&password=Ugrinovski10&client_id=3MVG9xKUwMLOA4CxO8mF0oId3pJz9AIOgXH.U949Lc2bHn4LE9Mz98mYCJiDFFjCOszzpKpxdGWU5sonArz9i&redirect_uri=https://test.salesforce.com&grant_type=password&client_secret=FE486420DA18CEEEF3F10EA16F13CC021E85FF1C4769296F7A40A84C6B83415C`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-type': 'application/json',
-        },
+    let response = await fetch(`${TokenUrl}`, {
+      method: 'POST',
+      headers: {
+        'Content-type': 'application/json',
       },
-    );
+    });
     response = await response.json();
     return response;
   } catch (error) {
@@ -72,7 +69,6 @@ export const AttendanceCreation = async data => {
     });
     response = await response.json();
     return response;
-   
   } catch (error) {
     return error.message;
   }
@@ -80,6 +76,7 @@ export const AttendanceCreation = async data => {
 
 export const AttendanceUpdate = async (data, userid) => {
   let token = await GetAsyncData('token');
+
   try {
     let response = await fetch(`${BaseUrl}/sobjects/Attendence__c/${userid}`, {
       method: 'PATCH',
@@ -92,7 +89,7 @@ export const AttendanceUpdate = async (data, userid) => {
 
     if (response.status === 204) {
       console.log('No content response: Success');
-      return { success: true };
+      return {success: true};
     }
 
     if (response.ok) {
@@ -104,10 +101,9 @@ export const AttendanceUpdate = async (data, userid) => {
     const errorMessage = `Error: ${response.status} ${response.statusText}`;
     console.error(errorMessage);
     throw new Error(errorMessage);
-
   } catch (error) {
     console.error('Error during fetch or JSON parsing:', error);
-    return { status: false, error: error.message };
+    return {status: false, error: error.message};
   }
 };
 

@@ -11,17 +11,17 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Geolocation from 'react-native-geolocation-service';
 import DeviceInfo from 'react-native-device-info';
-import {request, PERMISSIONS, RESULTS, check} from 'react-native-permissions';
+import {request, PERMISSIONS, RESULTS} from 'react-native-permissions';
 import {
   AttendanceCreation,
   AttendanceUpdate,
   ShiftDetails,
+  TokenCreation,
 } from '../Api/Service';
 import {IpUrl} from '../Api/Constants';
 import LinearGradient from 'react-native-linear-gradient';
 import {showMessage} from 'react-native-flash-message';
 import BottomModal from '../Components/BottomModal';
-import CustomDrawer from '../Components/CustomDrawer';
 import {useNavigation} from '@react-navigation/native';
 
 const Dashboard = ({navigation}) => {
@@ -55,19 +55,41 @@ const Dashboard = ({navigation}) => {
     return () => clearInterval(interval);
   }, [timerActive, startTime]);
 
+  useEffect(() => {
+    handleTakepermission();
+  }, []);
+
+  const handleTakepermission = async () => {
+    await requestLocationPermission();
+    await getLocation();
+  };
+
   const handleCheckIn = async () => {
     setIsvisible(false);
     setIsloading(true);
+
+    // formatting time 
     const newStartTime = Date.now();
     const currentDate = new Date();
-    const formattedDate = currentDate.toISOString().split('T')[0];
-
-    const formattedTimeIn = new Date(newStartTime)
-      .toISOString()
-      .split('T')[1]
-      .split('.')[0];
+    const australiaTime = new Intl.DateTimeFormat('en-AU', {
+      timeZone: 'Australia/Sydney',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).format(currentDate);
+    const [formattedDate, formattedTimeIn] = australiaTime.split(', ');
+    const dateParts = formattedDate.split('/');
+    const formattedDateString = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+    const [hours, minutes, seconds] = formattedTimeIn.split(':');
+    const formattedTimeString = `${hours}:${minutes}:${seconds}.000Z`;
 
     try {
+
+      // collection location
       await requestLocationPermission();
       await getLocation();
       if (!location) {
@@ -83,17 +105,21 @@ const Dashboard = ({navigation}) => {
       let id = await AsyncStorage.getItem('id');
       let shiftId = await ShiftDetails(id);
 
+      // Token generation
+      let token = await TokenCreation();
+      await AsyncStorage.setItem('token', token.access_token);
+
+      // api call
       const attendanceData = {
         Shift__c: shiftId.records[0].Id,
         Contact__c: id,
-        Logged_Date__c: formattedDate,
+        Logged_Date__c: formattedDateString,
         Login_Location__Latitude__s: location?.latitude,
         Login_Location__Longitude__s: location?.longitude,
-        Time_In__c: formattedTimeIn,
+
+        Time_In__c: formattedTimeString,
       };
-
       const result = await AttendanceCreation(attendanceData);
-
       if (result.success) {
         setStartTime(newStartTime);
         setElapsedTime(0);
@@ -127,22 +153,39 @@ const Dashboard = ({navigation}) => {
   const handleCheckOut = async () => {
     setIsvisible(false);
     setIsloading(true);
-    const currentDate = new Date();
-    const formattedTimeout = new Date(currentDate)
-      .toISOString()
-      .split('T')[1]
-      .split('.')[0];
 
-    getDeviceInfo();
-    await requestLocationPermission();
-    await getLocation();
+    // formating time and date
+    const currentDate = new Date();
+    const australiaTime = new Intl.DateTimeFormat('en-AU', {
+      timeZone: 'Australia/Sydney',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).format(currentDate);
+    const [formattedDate, formattedTimeIn] = australiaTime.split(', ');
+    const dateParts = formattedDate.split('/');
+    const formattedDateString = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+    const [hours, minutes, seconds] = formattedTimeIn.split(':');
+    const formattedTimeString = `${hours}:${minutes}:${seconds}.000Z`;
+
+    // collecting ids
     let id = await AsyncStorage.getItem('id');
     let check = await AsyncStorage.getItem('checkid');
     let shiftId = await ShiftDetails(id);
+
+    // Token Generation
+    let token = await TokenCreation();
+      await AsyncStorage.setItem('token', token.access_token);
+
+      // api call
     const attendanceData = {
       Shift__c: shiftId.records[0].Id,
       Contact__c: id,
-      Time_out__c: formattedTimeout,
+      Time_out__c: formattedTimeString,
     };
     try {
       const result = await AttendanceUpdate(attendanceData, check);
@@ -156,7 +199,7 @@ const Dashboard = ({navigation}) => {
         setLocation(null);
         showMessage({
           message: 'Success',
-          description: 'successfully Checked Out',
+          description: 'Successfully Checked Out',
           type: 'success',
         });
         setIsloading(false);
@@ -237,7 +280,7 @@ const Dashboard = ({navigation}) => {
       }
 
       if (permissionStatus === RESULTS.GRANTED) {
-        console.log('Location permission granted');
+        console.log('Permission Granted');
       } else {
         showMessage({
           message: 'Permission Denied',

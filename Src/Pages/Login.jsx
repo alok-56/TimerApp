@@ -20,6 +20,8 @@ const Login = ({navigation}) => {
   const [pin, setPin] = useState('');
   const [islogin, setIslogin] = useState(false);
   const [isLoading, setIsloading] = useState(false);
+  const [visible, setVisible] = useState(true);
+
   useEffect(() => {
     check();
   }, []);
@@ -43,9 +45,6 @@ const Login = ({navigation}) => {
     } else {
       setIslogin(false);
       if (isSupported) {
-        // let {success, method} = await authenticateUser();
-        // if (success) {
-        // }
       } else {
         setPinOption(null);
       }
@@ -197,15 +196,53 @@ const Login = ({navigation}) => {
         {pinoption ? (
           <>
             {islogin ? (
-              <>
+              <View style={{flexDirection: 'row', width: '40%'}}>
                 <Text style={{marginTop: 10, fontSize: 16}}>
                   Enter Your Pin
                 </Text>
-              </>
+                {visible ? (
+                  <TouchableOpacity
+                    style={{marginTop: 10, marginLeft: 10}}
+                    onPress={() => setVisible(!visible)}>
+                    <Image
+                      style={{height: 20, width: 20}}
+                      source={require('../Assests/Icons/hide.png')}></Image>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={{marginTop: 10, marginLeft: 10}}
+                    onPress={() => setVisible(!visible)}>
+                    <Image
+                      style={{height: 20, width: 20}}
+                      source={require('../Assests/Icons/visible.png')}></Image>
+                  </TouchableOpacity>
+                )}
+              </View>
             ) : (
-              <Text style={{marginTop: 10, fontSize: 16}}>Setup Login Pin</Text>
+              <View style={{flexDirection: 'row', width: '40%'}}>
+                <Text style={{marginTop: 10, fontSize: 16}}>
+                  Setup Login Pin
+                </Text>
+                {visible ? (
+                  <TouchableOpacity
+                    style={{marginTop: 12, marginLeft: 10}}
+                    onPress={() => setVisible(!visible)}>
+                    <Image
+                      style={{height: 20, width: 20}}
+                      source={require('../Assests/Icons/hide.png')}></Image>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={{marginTop: 12, marginLeft: 10}}
+                    onPress={() => setVisible(!visible)}>
+                    <Image
+                      style={{height: 20, width: 20}}
+                      source={require('../Assests/Icons/visible.png')}></Image>
+                  </TouchableOpacity>
+                )}
+              </View>
             )}
-            <OtpSetup OnOtpSet={OnOtpSet}></OtpSetup>
+            <OtpSetup OnOtpSet={OnOtpSet} visible={visible}></OtpSetup>
           </>
         ) : null}
 
@@ -222,7 +259,7 @@ const Login = ({navigation}) => {
           <View
             style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
             {isLoading ? (
-              <ActivityIndicator size={22}></ActivityIndicator>
+              <ActivityIndicator size={26} color="#fff"></ActivityIndicator>
             ) : (
               <Text style={{fontSize: 18, color: '#fff', fontWeight: '700'}}>
                 Login

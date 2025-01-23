@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import {Calendar} from 'react-native-calendars';
 import Home from 'react-native-vector-icons/FontAwesome';
-import {GetDailyShiftdetails} from '../Api/Service';
+import {GetDailyShiftdetails, TokenCreation} from '../Api/Service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const History = () => {
@@ -32,8 +32,12 @@ const History = () => {
 
   const UserHistory = async () => {
     let id = await AsyncStorage.getItem('id');
+    let token = await TokenCreation();
+    await AsyncStorage.setItem('token', token.access_token);
+
     GetDailyShiftdetails(id, selectedDate).then(res => {
       if (res.records.length > 0) {
+        console.log(res.records[0]);
         setData(res.records);
       } else {
         setData([]);
@@ -59,18 +63,13 @@ const History = () => {
 
   const ExtractAmOrPm = time => {
     const date = new Date(`1970-01-01T${time}`);
-
     let hours = date.getUTCHours();
     const minutes = date.getUTCMinutes();
-
     const period = hours >= 12 ? 'PM' : 'AM';
-
     hours = hours % 12 || 12;
-
     const formattedTime = `${hours}:${minutes
       .toString()
       .padStart(2, '0')} ${period}`;
-
     return formattedTime;
   };
 
