@@ -1,10 +1,17 @@
-import React from 'react';
-import {Text, TouchableOpacity, View} from 'react-native';
-import {OtpInput} from 'react-native-otp-entry';
+import React, { useEffect } from 'react';
+import { Text, TouchableOpacity, View } from 'react-native';
+import { OtpInput } from 'react-native-otp-entry';
 
-const OtpSetup = ({OnOtpSet,visible}) => {
+const OtpSetup = ({ OnOtpSet, visible }) => {
+  const handleOtpChange = (text) => {
+    // If the OTP length is exactly 4, call OnOtpSet with the entered text
+   
+      OnOtpSet(text);
+   
+  };
+
   return (
-    <View style={{width: '95%', marginTop: 10}}>
+    <View style={{ width: '95%', marginTop: 10 }}>
       <OtpInput
         numberOfDigits={4}
         focusColor="green"
@@ -15,10 +22,9 @@ const OtpSetup = ({OnOtpSet,visible}) => {
         type="numeric"
         secureTextEntry={visible}
         focusStickBlinkingDuration={500}
-        onFocus={() => console.log('Focused')}
-        onBlur={() => console.log('Blurred')}
-        onTextChange={text => console.log(text)}
-        onFilled={text => OnOtpSet(text)}
+        onTextChange={handleOtpChange}  
+        onFilled={handleOtpChange}   
+        onTex
         textInputProps={{
           accessibilityLabel: 'One-Time Password',
         }}

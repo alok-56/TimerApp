@@ -10,150 +10,134 @@ import {
 } from 'react-native';
 import OtpSetup from './OtpSetup';
 import {authenticateUser, isBiometricSupported} from '../Helper/BioMetric';
-import {LoginApi, TokenCreation} from '../Api/Service';
+import {LoginApi, TokenCreation, UpdatePinApi} from '../Api/Service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {showMessage} from 'react-native-flash-message';
 
 const Login = ({navigation}) => {
-  const [pinoption, setPinOption] = useState(false);
   const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
   const [pin, setPin] = useState('');
   const [islogin, setIslogin] = useState(false);
-  const [isLoading, setIsloading] = useState(false);
-  const [visible, setVisible] = useState(true);
+  const [passwordvisible, setPasswordVisible] = useState(true);
+  const [loginpin, setLoginPin] = useState(false);
+  const [reset, setReset] = useState(false);
+  const [pinexisit, setPinexisit] = useState(false);
 
   useEffect(() => {
-    check();
+    Checkuser();
   }, []);
 
-  const check = async () => {
+  const Checkuser = async () => {
     let logedin = await AsyncStorage.getItem('islogned');
-    const isSupported = await isBiometricSupported();
+    let logedpin = await AsyncStorage.getItem('pin');
+    if (logedpin) {
+      setPinexisit(true);
+    } else {
+      setPinexisit(false);
+    }
     if (logedin !== null) {
       setIslogin(true);
-      if (isSupported) {
-        let {success, method} = await authenticateUser();
-        if (!success) {
-          setPinOption(true);
-        }
-        if (success) {
-          navigation.navigate('dashboard');
-        }
-      } else {
-        setPinOption(true);
-      }
     } else {
       setIslogin(false);
-      if (isSupported) {
-      } else {
-        setPinOption(null);
-      }
     }
   };
 
   const HandleLogin = async () => {
-    setIsloading(true);
-    if (islogin) {
-      if (!pin) {
-        showMessage({
-          message: 'Pin is required',
-          description: 'Please Enter Pin',
-          type: 'danger',
-        });
-        setIsloading(false);
-        return;
-      }
-      let logedpin = await AsyncStorage.getItem('pin');
-      if (logedpin === pin) {
-        showMessage({
-          message: 'Login Success',
-          description: null,
-          type: 'success',
-        });
+    setLoading(true);
+    if (!email) {
+      showMessage({
+        message: 'Validation Error',
+        description: 'Email is required',
+        type: 'danger',
+      });
+      setLoading(false);
+      return;
+    }
 
-        navigation.navigate('dashboard');
-        setIsloading(false);
+    let token = await TokenCreation();
+    await AsyncStorage.setItem('token', token?.access_token);
+    if (token?.access_token) {
+      let res = await LoginApi(email);
+      if (res?.records?.length > 0) {
+        if (pinexisit) {
+          setLoginPin(true);
+          HandleVerify();
+        } else {
+          if (!pin || pin.length !== 4) {
+            setLoginPin(true);
+            showMessage({
+              message: 'Pin Setup',
+              description: 'Enter Pin For Further Verification',
+              type: 'info',
+            });
+            setLoading(false);
+            return;
+          } else {
+            await AsyncStorage.setItem('pin', pin);
+            await AsyncStorage.setItem('islogned', 'true');
+            await AsyncStorage.setItem('id', res.records[0].Id);
+            showMessage({
+              message: 'Login Success',
+              description: null,
+              type: 'success',
+            });
+            navigation.navigate('dashboard');
+            setLoading(false);
+          }
+        }
+
+        setLoading(false);
       } else {
         showMessage({
-          message: 'Invalied Pin',
-          description: 'Please Enter Vailed Pin To Access',
+          message: 'Error',
+          description: 'Incorrect Email',
           type: 'danger',
         });
-        setIsloading(false);
-      }
-    } else {
-      if (!email) {
-        showMessage({
-          message: 'Email is required',
-          description: 'Please Enter  Email',
-          type: 'danger',
-        });
-        setIsloading(false);
-        return;
-      }
-      let token = await TokenCreation();
-      await AsyncStorage.setItem('token', token.access_token);
-      if (token?.access_token) {
-        await AsyncStorage.setItem('email', email);
-        LoginApi(email).then(async res => {
-          if (res.done && res?.totalSize > 0) {
-            const isSupported = await isBiometricSupported();
-            if (isSupported && !pinoption) {
-              let {success, method} = await authenticateUser();
-              if (!success) {
-                setIsloading(false);
-                setPinOption(true);
-              }
-              if (success) {
-                await AsyncStorage.setItem('pin', pin);
-                await AsyncStorage.setItem('islogned', 'true');
-                await AsyncStorage.setItem('id', res.records[0].Id);
-                showMessage({
-                  message: 'Login Success',
-                  description: null,
-                  type: 'success',
-                });
-                navigation.navigate('dashboard');
-                setIsloading(false);
-              }
-            } else {
-              setIsloading(false);
-              setPinOption(true);
-              if (pin) {
-                await AsyncStorage.setItem('pin', pin);
-                await AsyncStorage.setItem('islogned', 'true');
-                await AsyncStorage.setItem('id', res.records[0].Id);
-                showMessage({
-                  message: 'Login Success',
-                  description: null,
-                  type: 'success',
-                });
-                navigation.navigate('dashboard');
-                setIsloading(false);
-              } else {
-                showMessage({
-                  message: 'Pin Required',
-                  description: 'Enter Pin For Further Verification',
-                  type: 'info',
-                });
-                setIsloading(false);
-              }
-            }
-          } else {
-            setIsloading(false);
-            showMessage({
-              message: 'Incorrect Email',
-              description: 'Please Enter Vailed Email',
-              type: 'danger',
-            });
-          }
-        });
+        setLoading(false);
       }
     }
   };
 
-  const OnOtpSet = data => {
-    setPin(data);
+  const HandleVerify = async () => {
+    if (!pin) {
+      showMessage({
+        message: 'Pin is required',
+        description: 'Please Enter Pin',
+        type: 'danger',
+      });
+      setLoading(false);
+      return;
+    }
+    let logedpin = await AsyncStorage.getItem('pin');
+    if (logedpin === pin) {
+      showMessage({
+        message: 'Login Success',
+        description: null,
+        type: 'success',
+      });
+      navigation.navigate('dashboard');
+      setLoading(false);
+    } else {
+      showMessage({
+        message: 'Invalied Pin',
+        description: 'Please Enter Vailed Pin To Access',
+        type: 'danger',
+      });
+      setLoading(false);
+    }
+  };
+
+  const HandleResetPin = async () => {
+    setEmail('');
+    setPin('');
+    setLoginPin(false);
+    setPinexisit(false);
+    setReset(true);
+  };
+
+  const OtpSet = value => {
+    setPin(value);
   };
 
   return (
@@ -172,11 +156,10 @@ const Login = ({navigation}) => {
         <Text style={{fontSize: 30, fontWeight: '600'}}>
           to <Text style={{color: 'green'}}>BKS Attendee</Text>
         </Text>
-
-        {!islogin ? (
+        {reset ? (
           <>
             <Text style={{marginTop: 30, fontSize: 16}}>
-              Enter Your Employee Email to access
+              Enter Your Employee Email to Reset Pin
             </Text>
 
             <TextInput
@@ -188,85 +171,265 @@ const Login = ({navigation}) => {
                 marginTop: 10,
                 borderRadius: 8,
                 paddingLeft: 10,
+                color: '#000',
               }}
-              placeholder="Enter Employee Email"></TextInput>
-          </>
-        ) : null}
+              value={email}
+              placeholder="Enter Employee Email"
+              placeholderTextColor="#000"></TextInput>
 
-        {pinoption ? (
+            {loginpin ? (
+              <>
+                <View style={{flexDirection: 'row', width: '40%'}}>
+                  <Text style={{marginTop: 10, fontSize: 16}}>
+                    Enter New Pin
+                  </Text>
+
+                  {passwordvisible ? (
+                    <TouchableOpacity
+                      onPress={() => setPasswordVisible(!passwordvisible)}
+                      style={{marginTop: 10, marginLeft: 10}}>
+                      <Image
+                        style={{height: 20, width: 20}}
+                        source={require('../Assests/Icons/hide.png')}></Image>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() => setPasswordVisible(!passwordvisible)}
+                      style={{marginTop: 10, marginLeft: 10}}>
+                      <Image
+                        style={{height: 20, width: 20}}
+                        source={require('../Assests/Icons/visible.png')}></Image>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                <OtpSetup
+                  OnOtpSet={OtpSet}
+                  visible={passwordvisible}></OtpSetup>
+              </>
+            ) : null}
+
+            <TouchableOpacity
+              onPress={HandleLogin}
+              disabled={loading}
+              style={{
+                width: '95%',
+                borderRadius: 8,
+                height: 45,
+                backgroundColor: 'green',
+                marginTop: 20,
+              }}>
+              <View
+                style={{
+                  flex: 1,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}>
+                {loading ? (
+                  <ActivityIndicator size={22} color="#fff"></ActivityIndicator>
+                ) : (
+                  <Text
+                    style={{
+                      fontSize: 18,
+                      color: '#fff',
+                      fontWeight: '700',
+                    }}>
+                    Reset
+                  </Text>
+                )}
+              </View>
+            </TouchableOpacity>
+          </>
+        ) : (
           <>
             {islogin ? (
-              <View style={{flexDirection: 'row', width: '40%'}}>
-                <Text style={{marginTop: 10, fontSize: 16}}>
-                  Enter Your Pin
-                </Text>
-                {visible ? (
-                  <TouchableOpacity
-                    style={{marginTop: 10, marginLeft: 10}}
-                    onPress={() => setVisible(!visible)}>
-                    <Image
-                      style={{height: 20, width: 20}}
-                      source={require('../Assests/Icons/hide.png')}></Image>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={{marginTop: 10, marginLeft: 10}}
-                    onPress={() => setVisible(!visible)}>
-                    <Image
-                      style={{height: 20, width: 20}}
-                      source={require('../Assests/Icons/visible.png')}></Image>
-                  </TouchableOpacity>
-                )}
-              </View>
-            ) : (
-              <View style={{flexDirection: 'row', width: '40%'}}>
-                <Text style={{marginTop: 10, fontSize: 16}}>
-                  Setup Login Pin
-                </Text>
-                {visible ? (
-                  <TouchableOpacity
-                    style={{marginTop: 12, marginLeft: 10}}
-                    onPress={() => setVisible(!visible)}>
-                    <Image
-                      style={{height: 20, width: 20}}
-                      source={require('../Assests/Icons/hide.png')}></Image>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
-                    style={{marginTop: 12, marginLeft: 10}}
-                    onPress={() => setVisible(!visible)}>
-                    <Image
-                      style={{height: 20, width: 20}}
-                      source={require('../Assests/Icons/visible.png')}></Image>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
-            <OtpSetup OnOtpSet={OnOtpSet} visible={visible}></OtpSetup>
-          </>
-        ) : null}
+              <>
+                <View style={{flexDirection: 'row', width: '40%'}}>
+                  <Text style={{marginTop: 10, fontSize: 16}}>
+                    Enter Your Pin
+                  </Text>
+                  {passwordvisible ? (
+                    <TouchableOpacity
+                      onPress={() => setPasswordVisible(!passwordvisible)}
+                      style={{marginTop: 10, marginLeft: 10}}>
+                      <Image
+                        style={{height: 20, width: 20}}
+                        source={require('../Assests/Icons/hide.png')}></Image>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() => setPasswordVisible(!passwordvisible)}
+                      style={{marginTop: 10, marginLeft: 10}}>
+                      <Image
+                        style={{height: 20, width: 20}}
+                        source={require('../Assests/Icons/visible.png')}></Image>
+                    </TouchableOpacity>
+                  )}
+                </View>
 
-        <TouchableOpacity
-          onPress={() => HandleLogin()}
-          style={{
-            width: '95%',
-            borderRadius: 8,
-            height: 45,
-            backgroundColor: 'green',
-            marginTop: 20,
-          }}
-          disabled={isLoading}>
-          <View
-            style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-            {isLoading ? (
-              <ActivityIndicator size={26} color="#fff"></ActivityIndicator>
+                <OtpSetup
+                  OnOtpSet={OtpSet}
+                  visible={passwordvisible}></OtpSetup>
+                <View
+                  style={{
+                    width: '100%',
+                    flexDirection: 'row',
+                    justifyContent: 'flex-end',
+                  }}>
+                  <TouchableOpacity
+                    onPress={HandleResetPin}
+                    style={{marginTop: 12, width: 100}}>
+                    <Text
+                      style={{
+                        fontWeight: '600',
+                        letterSpacing: 1,
+                        fontSize: 16,
+                        color: 'red',
+                      }}>
+                      Reset Pin
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity
+                  onPress={HandleVerify}
+                  disabled={loading}
+                  style={{
+                    width: '95%',
+                    borderRadius: 8,
+                    height: 45,
+                    backgroundColor: 'green',
+                    marginTop: 20,
+                  }}>
+                  <View
+                    style={{
+                      flex: 1,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}>
+                    <Text
+                      style={{fontSize: 18, color: '#fff', fontWeight: '700'}}>
+                      Verify
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </>
             ) : (
-              <Text style={{fontSize: 18, color: '#fff', fontWeight: '700'}}>
-                Login
-              </Text>
+              <>
+                <Text style={{marginTop: 30, fontSize: 16}}>
+                  Enter Your Employee Email to access
+                </Text>
+
+                <TextInput
+                  onChangeText={text => setEmail(text)}
+                  value={email}
+                  style={{
+                    width: '95%',
+                    height: 45,
+                    borderWidth: 1,
+                    marginTop: 10,
+                    borderRadius: 8,
+                    paddingLeft: 10,
+                    color: '#000',
+                  }}
+                  placeholder="Enter Employee Email"
+                  placeholderTextColor="#000"></TextInput>
+
+                {loginpin ? (
+                  <>
+                    <View style={{flexDirection: 'row', width: '40%'}}>
+                      {pinexisit ? (
+                        <Text style={{marginTop: 10, fontSize: 16}}>
+                          Enter Your Pin
+                        </Text>
+                      ) : (
+                        <Text style={{marginTop: 10, fontSize: 16}}>
+                          Set Your Pin
+                        </Text>
+                      )}
+
+                      {passwordvisible ? (
+                        <TouchableOpacity
+                          onPress={() => setPasswordVisible(!passwordvisible)}
+                          style={{marginTop: 10, marginLeft: 10}}>
+                          <Image
+                            style={{height: 20, width: 20}}
+                            source={require('../Assests/Icons/hide.png')}></Image>
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity
+                          onPress={() => setPasswordVisible(!passwordvisible)}
+                          style={{marginTop: 10, marginLeft: 10}}>
+                          <Image
+                            style={{height: 20, width: 20}}
+                            source={require('../Assests/Icons/visible.png')}></Image>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
+                    <OtpSetup
+                      OnOtpSet={OtpSet}
+                      visible={passwordvisible}></OtpSetup>
+
+                    <View
+                      style={{
+                        width: '100%',
+                        flexDirection: 'row',
+                        justifyContent: 'flex-end',
+                      }}>
+                      <TouchableOpacity
+                        onPress={HandleResetPin}
+                        style={{marginTop: 12, width: 100}}>
+                        <Text
+                          style={{
+                            fontWeight: '600',
+                            letterSpacing: 1,
+                            fontSize: 16,
+                            color: 'red',
+                          }}>
+                          Reset Pin
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                ) : null}
+
+                <TouchableOpacity
+                  onPress={HandleLogin}
+                  style={{
+                    width: '95%',
+                    borderRadius: 8,
+                    height: 45,
+                    backgroundColor: 'green',
+                    marginTop: 20,
+                  }}
+                  disabled={loading}>
+                  <View
+                    style={{
+                      flex: 1,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}>
+                    {loading ? (
+                      <ActivityIndicator
+                        size={22}
+                        color="#fff"></ActivityIndicator>
+                    ) : (
+                      <Text
+                        style={{
+                          fontSize: 18,
+                          color: '#fff',
+                          fontWeight: '700',
+                        }}>
+                        Login
+                      </Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              </>
             )}
-          </View>
-        </TouchableOpacity>
+          </>
+        )}
       </View>
     </View>
   );

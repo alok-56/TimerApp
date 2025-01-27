@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Geolocation from 'react-native-geolocation-service';
-import DeviceInfo from 'react-native-device-info';
 import {request, PERMISSIONS, RESULTS} from 'react-native-permissions';
 import {
   AttendanceCreation,
@@ -18,11 +17,11 @@ import {
   ShiftDetails,
   TokenCreation,
 } from '../Api/Service';
-import {IpUrl} from '../Api/Constants';
 import LinearGradient from 'react-native-linear-gradient';
 import {showMessage} from 'react-native-flash-message';
 import BottomModal from '../Components/BottomModal';
 import {useNavigation} from '@react-navigation/native';
+import {fetchCurrentLocation} from '../Helper/GpsLocation';
 
 const Dashboard = ({navigation}) => {
   const [startTime, setStartTime] = useState(null);
@@ -56,7 +55,7 @@ const Dashboard = ({navigation}) => {
   }, [timerActive, startTime]);
 
   useEffect(() => {
-    handleTakepermission();
+    // handleTakepermission();
   }, []);
 
   const handleTakepermission = async () => {
@@ -65,10 +64,12 @@ const Dashboard = ({navigation}) => {
   };
 
   const handleCheckIn = async () => {
-    setIsvisible(false);
     setIsloading(true);
+    setIsvisible(false);
 
-    // formatting time 
+    let {latitude, longitude} = await fetchCurrentLocation();
+
+    // formatting time
     const newStartTime = Date.now();
     const currentDate = new Date();
     const australiaTime = new Intl.DateTimeFormat('en-AU', {
@@ -88,19 +89,16 @@ const Dashboard = ({navigation}) => {
     const formattedTimeString = `${hours}:${minutes}:${seconds}.000Z`;
 
     try {
-
-      // collection location
-      await requestLocationPermission();
-      await getLocation();
-      if (!location) {
-        showMessage({
-          message: 'Error',
-          description: 'Unable to fetch location. Try again',
-          type: 'danger',
-        });
-        setIsloading(false);
-        return;
-      }
+      // // collection location
+      // if (!location) {
+      //   showMessage({
+      //     message: 'Error',
+      //     description: 'Unable to fetch location. Try again',
+      //     type: 'danger',
+      //   });
+      //   setIsloading(false);
+      //   return;
+      // }
 
       let id = await AsyncStorage.getItem('id');
       let shiftId = await ShiftDetails(id);
@@ -114,11 +112,11 @@ const Dashboard = ({navigation}) => {
         Shift__c: shiftId.records[0].Id,
         Contact__c: id,
         Logged_Date__c: formattedDateString,
-        Login_Location__Latitude__s: location?.latitude,
-        Login_Location__Longitude__s: location?.longitude,
-
+        Login_Location__Latitude__s: latitude,
+        Login_Location__Longitude__s: longitude,
         Time_In__c: formattedTimeString,
       };
+
       const result = await AttendanceCreation(attendanceData);
       if (result.success) {
         setStartTime(newStartTime);
@@ -139,7 +137,6 @@ const Dashboard = ({navigation}) => {
         });
       }
     } catch (error) {
-      console.error('Error during check-in:', error);
       showMessage({
         message: 'Error',
         description: 'An unexpected error occurred.',
@@ -153,7 +150,6 @@ const Dashboard = ({navigation}) => {
   const handleCheckOut = async () => {
     setIsvisible(false);
     setIsloading(true);
-
     // formating time and date
     const currentDate = new Date();
     const australiaTime = new Intl.DateTimeFormat('en-AU', {
@@ -179,9 +175,9 @@ const Dashboard = ({navigation}) => {
 
     // Token Generation
     let token = await TokenCreation();
-      await AsyncStorage.setItem('token', token.access_token);
+    await AsyncStorage.setItem('token', token.access_token);
 
-      // api call
+    // api call
     const attendanceData = {
       Shift__c: shiftId.records[0].Id,
       Contact__c: id,
@@ -189,13 +185,12 @@ const Dashboard = ({navigation}) => {
     };
     try {
       const result = await AttendanceUpdate(attendanceData, check);
+      console.log('alok1', result);
       if (result.success) {
-        setTimerActive(true);
-        setStartTime(null);
         setElapsedTime(0);
         setTimerActive(false);
         await AsyncStorage.removeItem('startTime');
-        setDeviceInfo(null);
+        setStartTime(null);
         setLocation(null);
         showMessage({
           message: 'Success',
@@ -227,23 +222,6 @@ const Dashboard = ({navigation}) => {
     return `${hours.toString().padStart(2, '0')}:${minutes
       .toString()
       .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-
-  const getDeviceInfo = async () => {
-    try {
-      const deviceId = await DeviceInfo.getUniqueId();
-      const response = await fetch(IpUrl);
-      const data = await response.json();
-
-      setDeviceInfo({
-        deviceId,
-        ipAddress: data.ip,
-      });
-    } catch (error) {
-      setIsvisible(false);
-      setIsloading(false);
-      console.error('Error getting device info:', error);
-    }
   };
 
   const getLocation = async () => {
@@ -352,7 +330,7 @@ const Dashboard = ({navigation}) => {
                   backgroundColor: timerActive ? 'gray' : 'green',
                   borderRadius: 5,
                 }}
-                disabled={timerActive}>
+                disabled={isloading}>
                 <View
                   style={{
                     flex: 1,
@@ -384,7 +362,7 @@ const Dashboard = ({navigation}) => {
                   backgroundColor: !timerActive ? 'gray' : 'red',
                   borderRadius: 5,
                 }}
-                disabled={!timerActive}>
+                disabled={isloading}>
                 <View
                   style={{
                     flex: 1,

@@ -34,7 +34,7 @@ const CustomDrawer = props => {
   };
 
   const HandleLogout = async () => {
-    await AsyncStorage.clear();
+    await AsyncStorage.removeItem("islogned");
     navigation.navigate('splash');
   };
 
