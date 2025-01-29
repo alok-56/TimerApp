@@ -24,7 +24,7 @@ const OtpSetup = ({ OnOtpSet, visible }) => {
         focusStickBlinkingDuration={500}
         onTextChange={handleOtpChange}  
         onFilled={handleOtpChange}   
-        onTex
+
         textInputProps={{
           accessibilityLabel: 'One-Time Password',
         }}
@@ -47,6 +47,9 @@ const OtpSetup = ({ OnOtpSet, visible }) => {
             width: 60,
             borderColor: '#000',
           },
+          pinCodeTextStyle:{
+            color:"#000"
+          }
         }}
       />
     </View>

@@ -90,15 +90,15 @@ const Dashboard = ({navigation}) => {
 
     try {
       // // collection location
-      // if (!location) {
-      //   showMessage({
-      //     message: 'Error',
-      //     description: 'Unable to fetch location. Try again',
-      //     type: 'danger',
-      //   });
-      //   setIsloading(false);
-      //   return;
-      // }
+      if (!latitude || !longitude) {
+        showMessage({
+          message: 'Error',
+          description: 'Unable to fetch location. Try again',
+          type: 'danger',
+        });
+        setIsloading(false);
+        return;
+      }
 
       let id = await AsyncStorage.getItem('id');
       let shiftId = await ShiftDetails(id);
@@ -299,7 +299,7 @@ const Dashboard = ({navigation}) => {
           <View
             style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
             <Text
-              style={{textAlign: 'center', fontSize: 16, fontWeight: '500'}}>
+              style={{textAlign: 'center', fontSize: 16, fontWeight: '500',color:"#000"}}>
               Attendance Self Service
             </Text>
             <Text
@@ -308,6 +308,7 @@ const Dashboard = ({navigation}) => {
                 marginTop: 5,
                 fontSize: 25,
                 fontWeight: '600',
+                color:"#000"
               }}>
               {timerActive
                 ? formatTime(elapsedTime)

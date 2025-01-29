@@ -10,7 +10,12 @@ import {
 } from 'react-native';
 import OtpSetup from './OtpSetup';
 import {authenticateUser, isBiometricSupported} from '../Helper/BioMetric';
-import {LoginApi, TokenCreation, UpdatePinApi} from '../Api/Service';
+import {
+  LoginApi,
+  TokenCreation,
+  UpdatePinApi,
+  VerifyPinApi,
+} from '../Api/Service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {showMessage} from 'react-native-flash-message';
 
@@ -74,16 +79,29 @@ const Login = ({navigation}) => {
             setLoading(false);
             return;
           } else {
-            await AsyncStorage.setItem('pin', pin);
-            await AsyncStorage.setItem('islogned', 'true');
-            await AsyncStorage.setItem('id', res.records[0].Id);
-            showMessage({
-              message: 'Login Success',
-              description: null,
-              type: 'success',
+            let res1 = await UpdatePinApi(res.records[0].Id, {
+              Mpin__c: pin,
             });
-            navigation.navigate('dashboard');
-            setLoading(false);
+            if (res1.ok) {
+              await AsyncStorage.setItem('pin', pin);
+              await AsyncStorage.setItem('islogned', 'true');
+              await AsyncStorage.setItem('id', res.records[0].Id);
+              await AsyncStorage.setItem('email', email);
+              showMessage({
+                message: 'Login Success',
+                description: null,
+                type: 'success',
+              });
+              navigation.navigate('dashboard');
+              setLoading(false);
+            } else {
+              res1 = await res1.json();
+              showMessage({
+                message: res1[0]?.message,
+                description: null,
+                type: 'danger',
+              });
+            }
           }
         }
 
@@ -109,8 +127,12 @@ const Login = ({navigation}) => {
       setLoading(false);
       return;
     }
+    setLoading(true);
+    let email = await AsyncStorage.getItem('email');
+    let res = await VerifyPinApi(email, pin);
+    console.log(res?.records.length);
     let logedpin = await AsyncStorage.getItem('pin');
-    if (logedpin === pin) {
+    if (res?.records?.length > 0) {
       showMessage({
         message: 'Login Success',
         description: null,
@@ -150,15 +172,21 @@ const Login = ({navigation}) => {
         <Image
           style={{height: 80, width: 80, marginTop: 40}}
           source={require('../Assests/Icons/attendance.png')}></Image>
-        <Text style={{fontSize: 30, marginTop: 30, fontWeight: '600'}}>
+        <Text
+          style={{
+            fontSize: 30,
+            marginTop: 30,
+            fontWeight: '600',
+            color: '#000',
+          }}>
           Welcome Back
         </Text>
-        <Text style={{fontSize: 30, fontWeight: '600'}}>
+        <Text style={{fontSize: 30, fontWeight: '600', color: '#000'}}>
           to <Text style={{color: 'green'}}>BKS Attendee</Text>
         </Text>
         {reset ? (
           <>
-            <Text style={{marginTop: 30, fontSize: 16}}>
+            <Text style={{marginTop: 30, fontSize: 16, color: '#000'}}>
               Enter Your Employee Email to Reset Pin
             </Text>
 
@@ -179,7 +207,8 @@ const Login = ({navigation}) => {
 
             {loginpin ? (
               <>
-                <View style={{flexDirection: 'row', width: '40%'}}>
+                <View
+                  style={{flexDirection: 'row', width: '40%', color: '#000'}}>
                   <Text style={{marginTop: 10, fontSize: 16}}>
                     Enter New Pin
                   </Text>
@@ -245,7 +274,7 @@ const Login = ({navigation}) => {
             {islogin ? (
               <>
                 <View style={{flexDirection: 'row', width: '40%'}}>
-                  <Text style={{marginTop: 10, fontSize: 16}}>
+                  <Text style={{marginTop: 10, fontSize: 16, color: '#000'}}>
                     Enter Your Pin
                   </Text>
                   {passwordvisible ? (
@@ -307,16 +336,26 @@ const Login = ({navigation}) => {
                       justifyContent: 'center',
                       alignItems: 'center',
                     }}>
-                    <Text
-                      style={{fontSize: 18, color: '#fff', fontWeight: '700'}}>
-                      Verify
-                    </Text>
+                    {loading ? (
+                      <ActivityIndicator
+                        size={22}
+                        color="#fff"></ActivityIndicator>
+                    ) : (
+                      <Text
+                        style={{
+                          fontSize: 18,
+                          color: '#fff',
+                          fontWeight: '700',
+                        }}>
+                        Verify
+                      </Text>
+                    )}
                   </View>
                 </TouchableOpacity>
               </>
             ) : (
               <>
-                <Text style={{marginTop: 30, fontSize: 16}}>
+                <Text style={{marginTop: 30, fontSize: 16, color: '#000'}}>
                   Enter Your Employee Email to access
                 </Text>
 
@@ -339,11 +378,13 @@ const Login = ({navigation}) => {
                   <>
                     <View style={{flexDirection: 'row', width: '40%'}}>
                       {pinexisit ? (
-                        <Text style={{marginTop: 10, fontSize: 16}}>
+                        <Text
+                          style={{marginTop: 10, fontSize: 16, color: '#000'}}>
                           Enter Your Pin
                         </Text>
                       ) : (
-                        <Text style={{marginTop: 10, fontSize: 16}}>
+                        <Text
+                          style={{marginTop: 10, fontSize: 16, color: '#000'}}>
                           Set Your Pin
                         </Text>
                       )}

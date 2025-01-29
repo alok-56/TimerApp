@@ -38,17 +38,18 @@ export const LoginApi = async email => {
 };
 
 export const UpdatePinApi = async (id, payload) => {
+  console.log(payload);
   let token = await GetAsyncData('token');
   try {
-    let response = await fetch(`${BaseUrl}/sobjects/Contact/${id}'`, {
-      method: 'POST',
+    let response = await fetch(`${BaseUrl}/sobjects/Contact/${id}`, {
+      method: 'PATCH',
       body: JSON.stringify(payload),
       headers: {
         'Content-type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
     });
-    response = await response.json();
+    
     return response;
   } catch (error) {
     return error.message;
@@ -57,9 +58,11 @@ export const UpdatePinApi = async (id, payload) => {
 
 export const VerifyPinApi = async (email, pin) => {
   let token = await GetAsyncData('token');
+  let url=`/query?q=SELECT+Id+FROM+Contact+WHERE+Email%3D'${email}'%20AND%20Mpin__c%3D'${pin}'`
+  console.log(url)
   try {
     let response = await fetch(
-      `${BaseUrl}/query/?q=SELECT+Id+FROM+Contact+WHERE+Email='${email}+AND+Mpin__c='${pin}`,
+      `${BaseUrl}${url}`,
       {
         method: 'GET',
         headers: {

@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, {useEffect, useState} from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   SafeAreaView,
   StyleSheet,
@@ -24,9 +25,11 @@ const CustomDrawer = props => {
   const activeRoute = state.routeNames[state.index];
   const [email, setEmail] = useState('');
 
-  useEffect(() => {
-    GetLocaldata();
-  }, []);
+  useFocusEffect(
+    useCallback(()=>{
+      GetLocaldata();
+    },[])
+  )
 
   const GetLocaldata = async () => {
     let email = await AsyncStorage.getItem('email');
@@ -47,7 +50,7 @@ const CustomDrawer = props => {
             style={styles.profileImage}
           />
         </View>
-        <Text style={styles.userName}>{email || 'Admin'}</Text>
+        <Text style={styles.userName}>{email}</Text>
       </View>
 
       <View style={styles.mainOptionsContainer}>

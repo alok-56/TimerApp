@@ -15,7 +15,7 @@ const Splash = ({navigation}) => {
       <Image
         style={{height: 100, width: 100}}
         source={require('../Assests/Icons/check.png')}></Image>
-      <Text style={{fontSize: 20, marginTop: 10, fontWeight: '600'}}>
+      <Text style={{fontSize: 20, marginTop: 10, fontWeight: '600',color:"#000"}}>
         BKS ATTENDANCE APP
       </Text>
     </View>

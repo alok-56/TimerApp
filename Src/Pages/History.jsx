@@ -36,9 +36,14 @@ const History = () => {
     await AsyncStorage.setItem('token', token.access_token);
 
     GetDailyShiftdetails(id, selectedDate).then(res => {
-      if (res.records.length > 0) {
-        console.log(res.records[0]);
-        setData(res.records);
+      if (res?.records?.length > 0) {
+        const sortedData = res?.records?.sort((a, b) => {
+          const timeA = new Date(`1970-01-01T${a?.Time_In__c}`)?.getTime();
+          const timeB = new Date(`1970-01-01T${b?.Time_In__c}`)?.getTime();
+          return timeB - timeA;
+        });
+        setData(sortedData);
+        // setData(res.records);
       } else {
         setData([]);
       }
@@ -161,7 +166,7 @@ const History = () => {
       </View>
 
       <View style={{padding: 10}}>
-        <Text style={{fontSize: 18, fontWeight: '600'}}>
+        <Text style={{fontSize: 18, fontWeight: '600',color:"#000"}}>
           {selectedDate ? `Selected Date: ${selectedDate}` : 'No Date Selected'}
         </Text>
       </View>
@@ -208,23 +213,23 @@ const History = () => {
                     }}>
                     {ExtractDayAndDate(item?.Logged_Date__c)?.date}
                   </Text>
-                  <Text style={{textAlign: 'center'}}>
+                  <Text style={{textAlign: 'center',color:"#000"}}>
                     {ExtractDayAndDate(item?.Logged_Date__c)?.day}
                   </Text>
                 </View>
                 <View style={{justifyContent: 'center'}}>
-                  <Text style={{fontSize: 16, fontWeight: '800'}}>
+                  <Text style={{fontSize: 16, fontWeight: '800',color:"#000"}}>
                     Check In
                   </Text>
-                  <Text style={{fontSize: 16, fontWeight: '400'}}>
+                  <Text style={{fontSize: 16, fontWeight: '400',color:"#000"}}>
                     {item?.Time_In__c ? ExtractAmOrPm(item?.Time_In__c) : 'NA'}
                   </Text>
                 </View>
                 <View style={{justifyContent: 'center'}}>
-                  <Text style={{fontSize: 16, fontWeight: '800'}}>
+                  <Text style={{fontSize: 16, fontWeight: '800',color:"#000"}}>
                     Check Out
                   </Text>
-                  <Text style={{fontSize: 16, fontWeight: '400'}}>
+                  <Text style={{fontSize: 16, fontWeight: '400',color:"#000"}}>
                     {item?.Time_out__c
                       ? ExtractAmOrPm(item?.Time_out__c)
                       : 'NA'}
