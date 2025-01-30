@@ -166,7 +166,7 @@ const History = () => {
       </View>
 
       <View style={{padding: 10}}>
-        <Text style={{fontSize: 18, fontWeight: '600',color:"#000"}}>
+        <Text style={{fontSize: 18, fontWeight: '600', color: '#000'}}>
           {selectedDate ? `Selected Date: ${selectedDate}` : 'No Date Selected'}
         </Text>
       </View>
@@ -213,23 +213,27 @@ const History = () => {
                     }}>
                     {ExtractDayAndDate(item?.Logged_Date__c)?.date}
                   </Text>
-                  <Text style={{textAlign: 'center',color:"#000"}}>
+                  <Text style={{textAlign: 'center', color: '#000'}}>
                     {ExtractDayAndDate(item?.Logged_Date__c)?.day}
                   </Text>
                 </View>
                 <View style={{justifyContent: 'center'}}>
-                  <Text style={{fontSize: 16, fontWeight: '800',color:"#000"}}>
+                  <Text
+                    style={{fontSize: 16, fontWeight: '800', color: '#000'}}>
                     Check In
                   </Text>
-                  <Text style={{fontSize: 16, fontWeight: '400',color:"#000"}}>
+                  <Text
+                    style={{fontSize: 16, fontWeight: '400', color: '#000'}}>
                     {item?.Time_In__c ? ExtractAmOrPm(item?.Time_In__c) : 'NA'}
                   </Text>
                 </View>
                 <View style={{justifyContent: 'center'}}>
-                  <Text style={{fontSize: 16, fontWeight: '800',color:"#000"}}>
+                  <Text
+                    style={{fontSize: 16, fontWeight: '800', color: '#000'}}>
                     Check Out
                   </Text>
-                  <Text style={{fontSize: 16, fontWeight: '400',color:"#000"}}>
+                  <Text
+                    style={{fontSize: 16, fontWeight: '400', color: '#000'}}>
                     {item?.Time_out__c
                       ? ExtractAmOrPm(item?.Time_out__c)
                       : 'NA'}

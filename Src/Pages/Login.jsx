@@ -122,16 +122,17 @@ const Login = ({navigation}) => {
       showMessage({
         message: 'Pin is required',
         description: 'Please Enter Pin',
-        type: 'danger',
+        type: 'info',
       });
       setLoading(false);
       return;
     }
     setLoading(true);
+    let token = await TokenCreation();
+    await AsyncStorage.setItem('token', token?.access_token);
     let email = await AsyncStorage.getItem('email');
     let res = await VerifyPinApi(email, pin);
-    console.log(res?.records.length);
-    let logedpin = await AsyncStorage.getItem('pin');
+    // let logedpin = await AsyncStorage.getItem('pin');
     if (res?.records?.length > 0) {
       showMessage({
         message: 'Login Success',
@@ -207,9 +208,8 @@ const Login = ({navigation}) => {
 
             {loginpin ? (
               <>
-                <View
-                  style={{flexDirection: 'row', width: '40%', color: '#000'}}>
-                  <Text style={{marginTop: 10, fontSize: 16}}>
+                <View style={{flexDirection: 'row', width: '40%'}}>
+                  <Text style={{marginTop: 10, fontSize: 16, color: '#000'}}>
                     Enter New Pin
                   </Text>
 
@@ -238,7 +238,7 @@ const Login = ({navigation}) => {
               </>
             ) : null}
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
               onPress={HandleLogin}
               disabled={loading}
               style={{
@@ -267,7 +267,7 @@ const Login = ({navigation}) => {
                   </Text>
                 )}
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </>
         ) : (
           <>
@@ -299,7 +299,7 @@ const Login = ({navigation}) => {
                 <OtpSetup
                   OnOtpSet={OtpSet}
                   visible={passwordvisible}></OtpSetup>
-                <View
+                {/* <View
                   style={{
                     width: '100%',
                     flexDirection: 'row',
@@ -318,7 +318,7 @@ const Login = ({navigation}) => {
                       Reset Pin
                     </Text>
                   </TouchableOpacity>
-                </View>
+                </View> */}
 
                 <TouchableOpacity
                   onPress={HandleVerify}
@@ -412,7 +412,7 @@ const Login = ({navigation}) => {
                       OnOtpSet={OtpSet}
                       visible={passwordvisible}></OtpSetup>
 
-                    <View
+                    {/* <View
                       style={{
                         width: '100%',
                         flexDirection: 'row',
@@ -431,7 +431,7 @@ const Login = ({navigation}) => {
                           Reset Pin
                         </Text>
                       </TouchableOpacity>
-                    </View>
+                    </View> */}
                   </>
                 ) : null}
 
