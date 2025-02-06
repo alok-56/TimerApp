@@ -111,6 +111,7 @@ export const AttendanceCreation = async data => {
       },
     });
     response = await response.json();
+    console.log(response)
     return response;
   } catch (error) {
     return error.message;

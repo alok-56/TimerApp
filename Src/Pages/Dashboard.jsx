@@ -22,6 +22,7 @@ import {showMessage} from 'react-native-flash-message';
 import BottomModal from '../Components/BottomModal';
 import {useNavigation} from '@react-navigation/native';
 import {fetchCurrentLocation} from '../Helper/GpsLocation';
+import {checkAndNavigateToPlayStore} from '../Components/AppUpdate';
 
 const Dashboard = ({navigation}) => {
   const [startTime, setStartTime] = useState(null);
@@ -56,6 +57,7 @@ const Dashboard = ({navigation}) => {
 
   useEffect(() => {
     // handleTakepermission();
+    checkAndNavigateToPlayStore('com.newuv');
   }, []);
 
   const handleTakepermission = async () => {
@@ -101,23 +103,28 @@ const Dashboard = ({navigation}) => {
       }
 
       let id = await AsyncStorage.getItem('id');
+
       let shiftId = await ShiftDetails(id);
 
       // Token generation
       let token = await TokenCreation();
+
       await AsyncStorage.setItem('token', token.access_token);
 
       // api call
       const attendanceData = {
-        Shift__c: shiftId.records[0].Id,
+        Shift__c: shiftId?.records[0]?.Id,
         Contact__c: id,
         Logged_Date__c: formattedDateString,
         Login_Location__Latitude__s: latitude,
         Login_Location__Longitude__s: longitude,
         Time_In__c: formattedTimeString,
       };
+      console.log(attendanceData);
 
       const result = await AttendanceCreation(attendanceData);
+      console.log(result);
+      console.log(result);
       if (result.success) {
         setStartTime(newStartTime);
         setElapsedTime(0);
@@ -151,6 +158,19 @@ const Dashboard = ({navigation}) => {
     setIsvisible(false);
     setIsloading(true);
     // formating time and date
+
+    let {latitude, longitude} = await fetchCurrentLocation();
+
+    if (!latitude || !longitude) {
+      showMessage({
+        message: 'Error',
+        description: 'Unable to fetch location. Try again',
+        type: 'danger',
+      });
+      setIsloading(false);
+      return;
+    }
+
     const currentDate = new Date();
     const australiaTime = new Intl.DateTimeFormat('en-AU', {
       timeZone: 'Australia/Sydney',
@@ -181,11 +201,14 @@ const Dashboard = ({navigation}) => {
     const attendanceData = {
       Shift__c: shiftId.records[0].Id,
       Contact__c: id,
+      Logout_Location__Latitude__s: latitude,
+      Logout_Location__Longitude__s: longitude,
       Time_out__c: formattedTimeString,
     };
+
     try {
       const result = await AttendanceUpdate(attendanceData, check);
-      console.log('alok1', result);
+
       if (result.success) {
         setElapsedTime(0);
         setTimerActive(false);
@@ -299,7 +322,12 @@ const Dashboard = ({navigation}) => {
           <View
             style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
             <Text
-              style={{textAlign: 'center', fontSize: 16, fontWeight: '500',color:"#000"}}>
+              style={{
+                textAlign: 'center',
+                fontSize: 16,
+                fontWeight: '500',
+                color: '#000',
+              }}>
               Attendance Self Service
             </Text>
             <Text
@@ -308,7 +336,7 @@ const Dashboard = ({navigation}) => {
                 marginTop: 5,
                 fontSize: 25,
                 fontWeight: '600',
-                color:"#000"
+                color: '#000',
               }}>
               {timerActive
                 ? formatTime(elapsedTime)

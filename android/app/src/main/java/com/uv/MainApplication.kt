@@ -1,4 +1,4 @@
-package com.uv
+package com.newuv
 
 import android.app.Application
 import com.facebook.react.PackageList
