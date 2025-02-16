@@ -1,13 +1,11 @@
-import {NavigationContainer} from '@react-navigation/native';
 import React from 'react';
-import AppStack from './Src/Navigation/AppStack';
-import FlashMessage from "react-native-flash-message";
+import {NavigationContainer} from '@react-navigation/native';
+import OnboardingStack from './Src/Navigation/OnboardingStack';
 
 const App = () => {
   return (
     <NavigationContainer>
-      <AppStack></AppStack>
-      <FlashMessage position="top" /> 
+      <OnboardingStack></OnboardingStack>
     </NavigationContainer>
   );
 };
