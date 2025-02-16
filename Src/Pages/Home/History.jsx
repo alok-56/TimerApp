@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   StyleSheet,
   Text,
@@ -13,13 +13,16 @@ import ClockCircle from 'react-native-vector-icons/AntDesign';
 import CheckCircle from 'react-native-vector-icons/Feather';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Clipboard from '@react-native-clipboard/clipboard';
+import {useFocusEffect} from '@react-navigation/native';
 
 const History = () => {
   const [timerLogs, setTimerLogs] = useState([]);
 
-  useEffect(() => {
-    FetchTimerLogs();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      FetchTimerLogs();
+    }, [timerLogs]),
+  );
 
   const FetchTimerLogs = async () => {
     try {
@@ -29,8 +32,9 @@ const History = () => {
         const completedLogs = allLogs.filter(
           timer => timer.status === 'Completed',
         );
-        setTimerLogs(completedLogs);
+        setTimerLogs(completedLogs.reverse());
       }
+      console.log(storedLogs);
     } catch (error) {
       console.log(error);
     }
@@ -62,7 +66,7 @@ const History = () => {
 
       <FlatList
         data={timerLogs}
-        keyExtractor={item => item.id.toString()}
+        keyExtractor={item => item.id}
         renderItem={({item}) => (
           <View style={styles.logCard}>
             <View style={styles.row}>

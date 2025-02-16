@@ -5,6 +5,7 @@ import {
   View,
   StyleSheet,
   ScrollView,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NewAnt from 'react-native-vector-icons/AntDesign';
@@ -15,7 +16,7 @@ const Accordion = ({updatetime}) => {
   const [expandedCategories, setExpandedCategories] = useState([]);
   const [timers, setTimers] = useState({});
   const [currentTime, setCurrentTime] = useState(Date.now());
-  const [currentBulk, setCurrentBulk] = useState(''); 
+  const [currentBulk, setCurrentBulk] = useState('');
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -24,7 +25,6 @@ const Accordion = ({updatetime}) => {
     return () => clearInterval(interval);
   }, []);
 
-  
   useEffect(() => {
     if (Array.isArray(updatetime) && updatetime.length > 0) {
       const grouped = groupTimersByCategory(updatetime);
@@ -32,8 +32,7 @@ const Accordion = ({updatetime}) => {
     }
   }, [updatetime]);
 
- 
-  const groupTimersByCategory = (timersArray) => {
+  const groupTimersByCategory = timersArray => {
     if (!Array.isArray(timersArray)) return {};
     return timersArray.reduce((acc, timer) => {
       if (!timer || !timer.category) return acc;
@@ -42,21 +41,18 @@ const Accordion = ({updatetime}) => {
       return acc;
     }, {});
   };
-
-  
-  const toggleExpand = (category) => {
-    setExpandedCategories((prevState) =>
+  const toggleExpand = category => {
+    setExpandedCategories(prevState =>
       prevState.includes(category)
-        ? prevState.filter((cat) => cat !== category)
-        : [...prevState, category]
+        ? prevState.filter(cat => cat !== category)
+        : [...prevState, category],
     );
   };
 
-  
   const updateTimerStatus = async (id, newStatus) => {
     const updatedTimers = Object.values(timers)
       .flat()
-      .map((timer) => {
+      .map(timer => {
         if (timer.id === id) {
           if (newStatus === 'In Progress') {
             return {
@@ -73,7 +69,10 @@ const Accordion = ({updatetime}) => {
             return {
               ...timer,
               status: 'Paused',
-              remainingTime: Math.max(timer.initialRemainingTime - elapsedTime, 0),
+              remainingTime: Math.max(
+                timer.initialRemainingTime - elapsedTime,
+                0,
+              ),
             };
           } else if (newStatus === 'Pending') {
             return {
@@ -93,13 +92,12 @@ const Accordion = ({updatetime}) => {
     await AsyncStorage.setItem('timers', JSON.stringify(updatedTimers));
   };
 
-  
   const bulkUpdateCategory = async (category, newStatus) => {
     if (!timers[category]) return;
     setCurrentBulk(newStatus);
     const updatedTimersArray = Object.values(timers)
       .flat()
-      .map((timer) => {
+      .map(timer => {
         if (timer.category === category) {
           if (newStatus === 'In Progress') {
             return {
@@ -116,7 +114,10 @@ const Accordion = ({updatetime}) => {
             return {
               ...timer,
               status: 'Paused',
-              remainingTime: Math.max(timer.initialRemainingTime - elapsedTime, 0),
+              remainingTime: Math.max(
+                timer.initialRemainingTime - elapsedTime,
+                0,
+              ),
             };
           } else if (newStatus === 'Pending') {
             return {
@@ -136,18 +137,39 @@ const Accordion = ({updatetime}) => {
     await AsyncStorage.setItem('timers', JSON.stringify(updatedTimersArray));
   };
 
- 
   useEffect(() => {
     const checkCompletedTimers = async () => {
       if (!timers || Object.keys(timers).length === 0) return;
       const updatedTimers = Object.values(timers)
         .flat()
-        .map((timer) => {
+        .map(timer => {
           if (timer.status === 'In Progress' && timer.startTime) {
-            const elapsedTime = Math.floor((currentTime - timer.startTime) / 1000);
-            const displayedRemainingTime = Math.max(timer.initialRemainingTime - elapsedTime, 0);
-            if (displayedRemainingTime <= 0) {
-             
+            const elapsedTime = Math.floor(
+              (currentTime - timer.startTime) / 1000,
+            );
+            const displayedRemainingTime = Math.max(
+              timer.initialRemainingTime - elapsedTime,
+              0,
+            );
+            const halfTime = Math.floor(timer.duration / 2);
+            if (elapsedTime >= halfTime && !timer.halfwayAlertShown) {
+              Alert.alert('Timer Alert', `${timer.timername} is 50% complete!`);
+
+              return {
+                ...timer,
+                remainingTime: displayedRemainingTime,
+                halfwayAlertShown: true,
+              };
+            }
+            if (displayedRemainingTime === 0) {
+              updateTimerLogs({
+                id: timers.id,
+                timername: timer.timername,
+                status: 'Completed',
+                remainingTime: 0,
+                completeddate: new Date(),
+                category: timer.category,
+              });
               return {
                 ...timer,
                 status: 'Completed',
@@ -155,7 +177,7 @@ const Accordion = ({updatetime}) => {
                 completeddate: new Date(),
               };
             }
-            return { ...timer };
+            return {...timer};
           }
           return timer;
         });
@@ -167,6 +189,17 @@ const Accordion = ({updatetime}) => {
 
     checkCompletedTimers();
   }, [currentTime]);
+
+  const updateTimerLogs = async newLog => {
+    try {
+      const storedLogs = await AsyncStorage.getItem('logs');
+      const logs = storedLogs ? JSON.parse(storedLogs) : [];
+      logs.push(newLog);
+      await AsyncStorage.setItem('logs', JSON.stringify(logs));
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   return (
     <ScrollView contentContainerStyle={{paddingBottom: 20}}>

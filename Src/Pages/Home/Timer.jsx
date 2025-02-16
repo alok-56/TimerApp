@@ -36,19 +36,6 @@ const Timer = () => {
       Alert.alert('Error', 'Please fill all fields');
       return;
     }
-    const existingTimer = timers.find(
-      timer =>
-        timer.timername.toLowerCase() === timername.toLowerCase() &&
-        timer.category.toLowerCase() === category.toLowerCase(),
-    );
-
-    if (existingTimer) {
-      Alert.alert(
-        'Error',
-        'A timer with that name already exists in this category.',
-      );
-      return;
-    }
 
     const durationInSeconds =
       parseInt(duration) * (durationtype === 'hrs' ? 3600 : 60);
