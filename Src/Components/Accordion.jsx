@@ -59,8 +59,7 @@ const Accordion = ({updatetime}) => {
               ...timer,
               status: 'In Progress',
               startTime: Date.now(),
-              initialRemainingTime: timer.duration,
-              remainingTime: timer.duration,
+              initialRemainingTime: timer.remainingTime,
             };
           } else if (newStatus === 'Paused') {
             const elapsedTime = timer.startTime
@@ -69,10 +68,7 @@ const Accordion = ({updatetime}) => {
             return {
               ...timer,
               status: 'Paused',
-              remainingTime: Math.max(
-                timer.initialRemainingTime - elapsedTime,
-                0,
-              ),
+              remainingTime: Math.max(timer.remainingTime - elapsedTime, 0),
             };
           } else if (newStatus === 'Pending') {
             return {
@@ -95,6 +91,7 @@ const Accordion = ({updatetime}) => {
   const bulkUpdateCategory = async (category, newStatus) => {
     if (!timers[category]) return;
     setCurrentBulk(newStatus);
+  
     const updatedTimersArray = Object.values(timers)
       .flat()
       .map(timer => {
@@ -104,8 +101,7 @@ const Accordion = ({updatetime}) => {
               ...timer,
               status: 'In Progress',
               startTime: Date.now(),
-              initialRemainingTime: timer.duration,
-              remainingTime: timer.duration,
+              initialRemainingTime: timer.remainingTime,
             };
           } else if (newStatus === 'Paused') {
             const elapsedTime = timer.startTime
@@ -114,10 +110,7 @@ const Accordion = ({updatetime}) => {
             return {
               ...timer,
               status: 'Paused',
-              remainingTime: Math.max(
-                timer.initialRemainingTime - elapsedTime,
-                0,
-              ),
+              remainingTime: Math.max(timer.remainingTime - elapsedTime, 0), 
             };
           } else if (newStatus === 'Pending') {
             return {
@@ -131,11 +124,12 @@ const Accordion = ({updatetime}) => {
         }
         return timer;
       });
-
+  
     const groupedTimers = groupTimersByCategory(updatedTimersArray);
     setTimers(groupedTimers);
     await AsyncStorage.setItem('timers', JSON.stringify(updatedTimersArray));
   };
+  
 
   useEffect(() => {
     const checkCompletedTimers = async () => {
@@ -152,14 +146,8 @@ const Accordion = ({updatetime}) => {
               0,
             );
             const halfTime = Math.floor(timer.duration / 2);
-            if (elapsedTime >= halfTime && !timer.halfwayAlertShown) {
+            if (elapsedTime === halfTime) {
               Alert.alert('Timer Alert', `${timer.timername} is 50% complete!`);
-
-              return {
-                ...timer,
-                remainingTime: displayedRemainingTime,
-                halfwayAlertShown: true,
-              };
             }
             if (displayedRemainingTime === 0) {
               updateTimerLogs({
